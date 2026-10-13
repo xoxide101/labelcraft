@@ -1,0 +1,1497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<title>LabelCraft</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Barlow+Condensed:wght@400;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Oswald:wght@400;600&family=Roboto+Mono:wght@400;700&display=swap">
+<style>
+/* Layout: one-screen workbench — menu + tool bar, label stock (left), desk with the label (centre), properties (right), status strip. */
+:root {
+  --desk: #e4e2de;
+  --panel: #f8f7f5;
+  --panel-2: #efedea;
+  --line: #d6d3ce;
+  --fg: #1f1d1b;
+  --muted: #6a655f;
+  --accent: #c8322b;
+  --accent-ink: #ffffff;
+  --accent-soft: #f6dedb;
+  --tape: #1b1a19;
+  --paper-shadow: 0 1px 2px rgba(40,30,20,.18), 0 8px 24px rgba(40,30,20,.16);
+  --font-brand: "Archivo Black", "Arial Black", Impact, sans-serif;
+  --font-ui: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --font-num: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #121110; --panel: #1b1a18; --panel-2: #242220; --line: #34312e;
+    --fg: #ece8e3; --muted: #9a948c; --accent: #ef5a4f; --accent-ink: #1a0d0b; --accent-soft: #3a1f1c;
+    --tape: #000000; --paper-shadow: 0 1px 2px rgba(0,0,0,.5), 0 10px 30px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #121110; --panel: #1b1a18; --panel-2: #242220; --line: #34312e;
+  --fg: #ece8e3; --muted: #9a948c; --accent: #ef5a4f; --accent-ink: #1a0d0b; --accent-soft: #3a1f1c;
+  --tape: #000000; --paper-shadow: 0 1px 2px rgba(0,0,0,.5), 0 10px 30px rgba(0,0,0,.5);
+  color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--desk); color: var(--fg); font-family: var(--font-ui); font-size: 13px; overflow: hidden; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+
+/* ---------- Top bar ---------- */
+.bar { display: flex; align-items: center; gap: 10px; padding: 7px 16px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; min-width: 0; }
+.brand { display: flex; align-items: center; }
+/* Embossed label-tape wordmark */
+.tape-mark { font-family: var(--font-brand); font-size: 13px; letter-spacing: .14em; color: #f4f1ec; background: var(--tape); padding: 5px 10px 4px; border-radius: 3px; text-shadow: 0 1px 0 rgba(0,0,0,.6), 0 -1px 0 rgba(255,255,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); white-space: nowrap; }
+.tape-mark b { color: #ff7a6e; font-weight: 400; }
+.spacer { flex: 1; }
+.group { display: flex; gap: 2px; padding: 2px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 9px; border: 0; border-radius: 5px; background: transparent; cursor: pointer; white-space: nowrap; }
+.btn:hover:not(:disabled) { background: var(--line); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn[aria-pressed="true"] { background: var(--panel); color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.btn svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+.btn.outline { border: 1px solid var(--line); background: var(--panel); }
+.zoom-val { font-family: var(--font-num); font-size: 11.5px; min-width: 46px; text-align: center; align-self: center; font-variant-numeric: tabular-nums; }
+.drawer-toggle { display: none; }
+
+/* Menu bar */
+.menubar { display: flex; gap: 1px; }
+.menu { position: relative; }
+.menu-btn { height: 30px; padding: 0 9px; border: 0; border-radius: 5px; background: transparent; cursor: pointer; font-weight: 500; }
+.menu-btn:hover, .menu-btn[aria-expanded="true"] { background: var(--panel-2); }
+.menu-btn[aria-expanded="true"] { color: var(--accent); }
+.menu-list { position: absolute; top: calc(100% + 4px); left: 0; z-index: 1000; min-width: 250px; padding: 5px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 32px rgba(0,0,0,.22); }
+.menu-item { display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 8px; width: 100%; padding: 7px 10px 7px 6px; border: 0; border-radius: 5px; background: transparent; cursor: pointer; text-align: left; white-space: nowrap; }
+.menu-item:hover:not(:disabled), .menu-item:focus-visible { background: var(--accent); color: var(--accent-ink); outline: none; }
+.menu-item:hover:not(:disabled) .menu-key, .menu-item:focus-visible .menu-key { color: inherit; opacity: .85; }
+.menu-item:disabled { opacity: .45; cursor: default; }
+.menu-check { font-size: 12px; text-align: center; }
+.menu-key { font-family: var(--font-num); font-size: 11px; color: var(--muted); }
+.menu-sep { height: 1px; margin: 5px 4px; background: var(--line); }
+.menu-heading { padding: 6px 10px 3px 32px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.docname { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.docname.dirty::after { content: " •"; color: var(--accent); }
+
+/* ---------- Workspace ---------- */
+.work { display: grid; grid-template-columns: 268px minmax(0, 1fr) 284px; min-height: 0; position: relative; }
+.side { background: var(--panel); display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: auto; }
+.side.left { border-right: 1px solid var(--line); }
+.side.right { border-left: 1px solid var(--line); }
+.side-head { padding: 12px 14px 8px; font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; }
+.sec { padding: 4px 14px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+.sec:last-child { border-bottom: 0; }
+.sec h3 { margin: 6px 0 0; font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+.field { display: grid; gap: 3px; min-width: 0; }
+.field > span { font-size: 11px; color: var(--muted); }
+.input, select.input, textarea.input { width: 100%; box-sizing: border-box; height: 30px; padding: 0 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); }
+textarea.input { height: auto; min-height: 60px; padding: 6px 8px; resize: vertical; line-height: 1.4; }
+input[type="number"].input { font-family: var(--font-num); font-size: 12px; font-variant-numeric: tabular-nums; }
+input[type="color"].input { padding: 2px; height: 30px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.seg { display: flex; gap: 2px; padding: 2px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; }
+.seg .btn { flex: 1; justify-content: center; height: 28px; padding: 0 6px; }
+.error { color: var(--accent); font-size: 12px; margin: 0; }
+
+/* Stock list */
+.stock-tools { padding: 0 14px 10px; display: grid; gap: 8px; border-bottom: 1px solid var(--line); }
+.stock-list { flex: 1; overflow: auto; padding: 4px 8px 12px; min-height: 120px; }
+.stock-group { margin: 10px 6px 4px; font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.stock { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; width: 100%; padding: 7px 8px; border: 0; border-radius: 6px; background: transparent; text-align: left; cursor: pointer; }
+.stock:hover { background: var(--panel-2); }
+.stock[aria-pressed="true"] { background: var(--accent-soft); }
+.stock-thumb { height: 26px; display: grid; place-items: center; }
+.stock-thumb i { display: block; background: var(--panel); border: 1px solid var(--muted); border-radius: 2px; }
+.stock-thumb i.round { border-radius: 50%; }
+.stock-thumb i.tape { border-radius: 0; border-left-style: dashed; border-right-style: dashed; }
+.stock-name { min-width: 0; }
+.stock-name b { display: block; font-weight: 600; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stock-name small { color: var(--muted); font-size: 11.5px; }
+.stock-size { font-family: var(--font-num); font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* Desk + label */
+.desk { position: relative; overflow: auto; box-sizing: border-box; min-width: 0; min-height: 0; display: grid; place-items: center; padding: 40px; background-color: var(--desk); background-image: radial-gradient(circle, color-mix(in srgb, var(--fg) 9%, transparent) 1px, transparent 1.2px); background-size: 18px 18px; }
+.label-frame { position: relative; box-shadow: var(--paper-shadow); background: #fff; overflow: hidden; line-height: 0; }
+.label-frame.round { border-radius: 50%; }
+.label-frame.tape::before, .label-frame.tape::after { content: ""; position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed rgba(0,0,0,.35); z-index: 2; pointer-events: none; }
+.label-frame.tape::before { left: 0; }
+.label-frame.tape::after { right: 0; }
+.safe-area { position: absolute; z-index: 3; pointer-events: none; border: 1px dashed rgba(200,50,43,.55); }
+.label-frame.round .safe-area { border-radius: 50%; }
+.size-tag { position: absolute; font-family: var(--font-num); font-size: 11px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* Status strip */
+.statusbar { display: flex; gap: 18px; align-items: center; padding: 5px 16px; background: var(--panel); border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.statusbar b { color: var(--fg); font-weight: 600; }
+.statusbar .num { font-family: var(--font-num); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+/* Dialogs */
+.backdrop { position: fixed; inset: 0; z-index: 2000; background: rgba(15,12,10,.5); display: grid; place-items: center; padding: 16px; }
+.dialog { width: min(460px, 100%); max-height: calc(100% - 32px); overflow: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; padding: 20px; box-shadow: 0 20px 50px rgba(0,0,0,.35); box-sizing: border-box; }
+.dialog.wide { width: min(640px, 100%); }
+.dialog h2 { margin: 0 0 10px; font-size: 17px; font-weight: 600; text-wrap: balance; }
+.dialog p { margin: 0 0 12px; color: var(--muted); line-height: 1.5; }
+.dialog-body { display: grid; gap: 12px; margin-bottom: 18px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.dialog .btn { border: 1px solid var(--line); }
+.dialog .btn.primary { border-color: var(--accent); }
+.dialog .btn.danger { background: #b42a22; border-color: #b42a22; color: #fff; }
+.out-size { font-family: var(--font-num); font-size: 12px; color: var(--muted); }
+.export-preview { max-width: 100%; max-height: 50vh; display: block; margin: 0 auto 12px; background: repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0 / 12px 12px; box-shadow: var(--paper-shadow); }
+.help table { border-collapse: collapse; width: 100%; }
+.help td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.help td:last-child { text-align: right; font-family: var(--font-num); font-size: 12px; white-space: nowrap; }
+.help ol { margin: 0 0 12px; padding-left: 20px; line-height: 1.55; }
+.help h3 { margin: 14px 0 6px; font-size: 14px; }
+.help a { color: var(--accent); }
+
+.toast { position: fixed; left: 50%; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--panel); padding: 9px 14px; border-radius: 7px; font-weight: 500; box-shadow: 0 6px 20px rgba(0,0,0,.25); z-index: 3000; max-width: calc(100% - 32px); }
+
+#print-area { display: none; }
+@media print {
+  body > *:not(#print-area) { display: none !important; }
+  #print-area { display: block !important; }
+  #print-area img { display: block; }
+  body { background: #fff; overflow: visible; }
+}
+
+.theme-btn { width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.theme-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; }
+/* Narrow screens: panels become drawers */
+@media (max-width: 1060px) {
+  .work { grid-template-columns: minmax(0, 1fr); }
+  .side { position: absolute; top: 0; bottom: 0; width: min(300px, 88vw); z-index: 20; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+  .side.left { left: 0; }
+  .side.right { right: 0; }
+  .side:not(.open) { display: none; }
+  .drawer-toggle { display: inline-flex; }
+  .lbl { display: none; }
+}
+@media (max-width: 640px) {
+  .bar { padding-inline: 10px; gap: 6px; }
+  .docname, .hide-sm { display: none; }
+  .desk { padding: 20px; }
+  .statusbar .hide-sm { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <button class="btn drawer-toggle" id="toggle-left" title="Label stock" aria-label="Show label stock"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h6M7 14h4"/></svg></button>
+    <div class="brand"><span class="tape-mark">LABEL<b>CRAFT</b></span></div>
+    <nav class="menubar" id="menubar" role="menubar" aria-label="Main menu"></nav>
+    <span class="docname" id="docname">Untitled</span>
+    <div class="spacer"></div>
+
+    <div class="group" role="group" aria-label="Insert">
+      <button class="btn" id="add-text" title="Add text"><svg viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg><span class="lbl">Text</span></button>
+      <button class="btn" id="add-barcode" title="Add a barcode"><svg viewBox="0 0 24 24"><path d="M4 5v14M7 5v14M9.5 5v14M13 5v14M15 5v14M18 5v14M20 5v14"/></svg><span class="lbl">Barcode</span></button>
+      <button class="btn" id="add-qr" title="Add a QR code"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></svg><span class="lbl">QR</span></button>
+      <button class="btn" id="add-rect" title="Add a box"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg></button>
+      <button class="btn hide-sm" id="add-ellipse" title="Add an ellipse"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg></button>
+      <button class="btn hide-sm" id="add-line" title="Add a line"><svg viewBox="0 0 24 24"><path d="M4 18 20 6"/></svg></button>
+      <button class="btn" id="add-image" title="Add an image or logo"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 8"/></svg></button>
+    </div>
+
+    <div class="group" role="group" aria-label="Rotate selection">
+      <button class="btn" id="rot-ccw" title="Rotate 90° left"><svg viewBox="0 0 24 24"><path d="M3 4v6h6"/><path d="M3.5 10A9 9 0 1 1 6 17"/></svg></button>
+      <button class="btn" id="rot-cw" title="Rotate 90° right"><svg viewBox="0 0 24 24"><path d="M21 4v6h-6"/><path d="M20.5 10A9 9 0 1 0 18 17"/></svg></button>
+      <button class="btn" id="rot-180" title="Rotate 180°"><span style="font-family:var(--font-num);font-size:11.5px">180°</span></button>
+    </div>
+
+    <div class="group hide-sm" role="group" aria-label="Zoom">
+      <button class="btn" id="zoom-out" title="Zoom out" aria-label="Zoom out"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+      <span class="zoom-val" id="zoom-val">100%</span>
+      <button class="btn" id="zoom-in" title="Zoom in" aria-label="Zoom in"><svg viewBox="0 0 24 24"><path d="M6 12h12M12 6v12"/></svg></button>
+      <button class="btn" id="zoom-fit" title="Fit the label in the window">Fit</button>
+    </div>
+
+    <button class="btn primary" id="export-btn" title="Export as PNG, JPG or SVG"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span class="lbl">Export</span></button>
+    <button class="btn theme-btn" id="theme-btn" type="button" aria-label="Switch between light and dark" title="Switch between light and dark"></button>
+    <button class="btn drawer-toggle" id="toggle-right" title="Properties" aria-label="Show properties"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
+  </header>
+
+  <main class="work">
+    <!-- Label stock -->
+    <aside class="side left" id="left">
+      <div class="side-head">Label stock <span id="stock-count"></span></div>
+      <div class="stock-tools">
+        <input class="input" id="stock-search" type="search" placeholder="Search by name, code or size" aria-label="Search label stock">
+        <select class="input" id="stock-brand" aria-label="Brand"></select>
+      </div>
+      <div class="stock-list" id="stock-list"></div>
+      <div class="sec" id="tape-sec" hidden>
+        <h3>Tape length</h3>
+        <label class="field"><span id="tape-len-label">Length (mm)</span><input class="input" type="number" id="tape-len" min="10" max="1000" step="1"></label>
+      </div>
+      <div class="sec">
+        <h3>Custom size</h3>
+        <div class="row">
+          <label class="field"><span id="cw-label">Width (mm)</span><input class="input" type="number" id="custom-w" min="5" max="1000" step="0.1" value="60"></label>
+          <label class="field"><span id="ch-label">Height (mm)</span><input class="input" type="number" id="custom-h" min="5" max="1000" step="0.1" value="30"></label>
+        </div>
+        <label class="field"><span>Shape</span>
+          <select class="input" id="custom-shape"><option value="rect">Rectangle, rounded corners</option><option value="square">Rectangle, square corners</option><option value="round">Round / oval</option><option value="tape">Continuous tape</option></select>
+        </label>
+        <button class="btn outline" id="custom-apply">Use custom size</button>
+      </div>
+    </aside>
+
+    <!-- Desk -->
+    <section class="desk" id="desk" aria-label="Label design area">
+      <div class="label-frame" id="frame">
+        <canvas id="c"></canvas>
+        <div class="safe-area" id="safe"></div>
+      </div>
+    </section>
+
+    <!-- Properties -->
+    <aside class="side right" id="right">
+      <div class="side-head"><span id="props-title">Label</span></div>
+
+      <div id="p-none">
+        <div class="sec">
+          <p class="hint">Click something on the label to change it, or add text, a barcode or a QR code from the toolbar.</p>
+          <div class="field"><span>Current stock</span><b id="p-stock-name"></b><span class="out-size" id="p-stock-size"></span></div>
+          <div class="row">
+            <button class="btn outline" id="label-rotate" title="Turn the label sideways, content and all">Turn label 90°</button>
+            <button class="btn outline" id="label-clear">Clear label</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="p-obj" hidden>
+        <div class="sec">
+          <h3>Position and size <span id="unit-note"></span></h3>
+          <div class="row">
+            <label class="field"><span>X (left)</span><input class="input" type="number" step="0.1" id="p-x"></label>
+            <label class="field"><span>Y (top)</span><input class="input" type="number" step="0.1" id="p-y"></label>
+          </div>
+          <div class="row" id="p-size-row">
+            <label class="field"><span>Width</span><input class="input" type="number" step="0.1" min="0.5" id="p-w"></label>
+            <label class="field"><span>Height</span><input class="input" type="number" step="0.1" min="0.5" id="p-h"></label>
+          </div>
+          <h3>Rotation</h3>
+          <div class="row">
+            <div class="seg" role="group" aria-label="Rotate">
+              <button class="btn" data-rot="-90" title="Rotate 90° left">↺ 90</button>
+              <button class="btn" data-rot="90" title="Rotate 90° right">↻ 90</button>
+              <button class="btn" data-rot="180" title="Rotate 180°">180</button>
+            </div>
+            <label class="field"><input class="input" type="number" step="1" id="p-angle" aria-label="Angle in degrees" title="Angle in degrees"></label>
+          </div>
+          <h3>Align to label</h3>
+          <div class="seg" role="group" aria-label="Align to label">
+            <button class="btn" data-align="left" title="Align left"><svg viewBox="0 0 24 24"><path d="M4 3v18M8 7h10v4H8zM8 14h6v4H8z"/></svg></button>
+            <button class="btn" data-align="hcenter" title="Centre horizontally"><svg viewBox="0 0 24 24"><path d="M12 3v18M6 7h12v4H6zM8 14h8v4H8z"/></svg></button>
+            <button class="btn" data-align="right" title="Align right"><svg viewBox="0 0 24 24"><path d="M20 3v18M6 7h10v4H6zM10 14h6v4h-6z"/></svg></button>
+            <button class="btn" data-align="top" title="Align top"><svg viewBox="0 0 24 24"><path d="M3 4h18M7 8v10h4V8zM14 8v6h4V8z"/></svg></button>
+            <button class="btn" data-align="vcenter" title="Centre vertically"><svg viewBox="0 0 24 24"><path d="M3 12h18M7 6v12h4V6zM14 8v8h4V8z"/></svg></button>
+            <button class="btn" data-align="bottom" title="Align bottom"><svg viewBox="0 0 24 24"><path d="M3 20h18M7 6v10h4V6zM14 10v6h4v-6z"/></svg></button>
+          </div>
+        </div>
+
+        <div class="sec" id="p-text" hidden>
+          <h3>Text</h3>
+          <textarea class="input" id="t-content" rows="3" aria-label="Text"></textarea>
+          <label class="field"><span>Font</span><select class="input" id="t-font"></select></label>
+          <div class="row">
+            <label class="field"><span>Size (pt)</span><input class="input" type="number" step="0.5" min="2" id="t-size"></label>
+            <label class="field"><span>Colour</span><input class="input" type="color" id="t-color"></label>
+          </div>
+          <div class="row">
+            <div class="seg" role="group" aria-label="Style">
+              <button class="btn" id="t-bold" aria-pressed="false" title="Bold"><b>B</b></button>
+              <button class="btn" id="t-italic" aria-pressed="false" title="Italic"><i style="font-family:Georgia,serif">I</i></button>
+              <button class="btn" id="t-underline" aria-pressed="false" title="Underline"><u>U</u></button>
+            </div>
+            <div class="seg" role="group" aria-label="Text alignment">
+              <button class="btn" data-talign="left" title="Align text left"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
+              <button class="btn" data-talign="center" title="Centre text"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
+              <button class="btn" data-talign="right" title="Align text right"><svg viewBox="0 0 24 24"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
+            </div>
+          </div>
+          <div class="row">
+            <label class="field"><span>Letter spacing</span><input class="input" type="number" step="10" id="t-spacing"></label>
+            <label class="field"><span>Line height</span><input class="input" type="number" step="0.05" min="0.6" id="t-lineh"></label>
+          </div>
+          <label class="check"><input type="checkbox" id="t-invert"> White text on black</label>
+        </div>
+
+        <div class="sec" id="p-barcode" hidden>
+          <h3>Barcode</h3>
+          <label class="field"><span>Type</span><select class="input" id="b-type"></select></label>
+          <label class="field"><span>Data</span><input class="input" id="b-value" autocomplete="off" spellcheck="false"></label>
+          <label class="check"><input type="checkbox" id="b-text"> Show the numbers under the bars</label>
+          <p class="error" id="b-error" hidden></p>
+          <p class="hint" id="b-hint"></p>
+        </div>
+
+        <div class="sec" id="p-qr" hidden>
+          <h3>QR code</h3>
+          <label class="field"><span>Data or web address</span><textarea class="input" id="q-value" rows="3" spellcheck="false"></textarea></label>
+          <label class="field"><span>Error correction</span>
+            <select class="input" id="q-ecc"><option value="L">Low (7%) – smallest code</option><option value="M">Medium (15%)</option><option value="Q">Quartile (25%)</option><option value="H">High (30%) – survives damage</option></select>
+          </label>
+          <p class="error" id="q-error" hidden></p>
+        </div>
+
+        <div class="sec" id="p-shape" hidden>
+          <h3>Shape</h3>
+          <div class="row">
+            <label class="field"><span>Fill</span><select class="input" id="s-fill"><option value="none">None</option><option value="#000000">Black</option><option value="#ffffff">White</option><option value="#c8322b">Red</option><option value="#808080">Grey</option></select></label>
+            <label class="field"><span>Outline</span><select class="input" id="s-stroke"><option value="none">None</option><option value="#000000">Black</option><option value="#ffffff">White</option><option value="#c8322b">Red</option></select></label>
+          </div>
+          <div class="row">
+            <label class="field"><span>Outline width (mm)</span><input class="input" type="number" step="0.1" min="0" id="s-sw"></label>
+            <label class="field" id="s-radius-f"><span>Corner radius (mm)</span><input class="input" type="number" step="0.5" min="0" id="s-radius"></label>
+          </div>
+        </div>
+
+        <div class="sec" id="p-image" hidden>
+          <h3>Image</h3>
+          <label class="check"><input type="checkbox" id="i-bw"> Black and white (for thermal printers)</label>
+        </div>
+
+        <div class="sec">
+          <h3>Arrange</h3>
+          <div class="row">
+            <button class="btn outline" id="o-front">Bring to front</button>
+            <button class="btn outline" id="o-back">Send to back</button>
+          </div>
+          <div class="row">
+            <button class="btn outline" id="o-dup">Duplicate</button>
+            <button class="btn outline" id="o-del">Delete</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="statusbar">
+    <span><b id="st-stock">—</b></span>
+    <span class="num" id="st-size"></span>
+    <span class="num hide-sm" id="st-px"></span>
+    <span class="hide-sm" id="st-save">Autosaves in this browser</span>
+  </footer>
+</div>
+
+<!-- Confirm dialog -->
+<div class="backdrop" id="ask" hidden>
+  <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="ask-title">
+    <h2 id="ask-title"></h2>
+    <p id="ask-body"></p>
+    <div class="dialog-actions"><button class="btn" id="ask-cancel">Cancel</button><button class="btn primary" id="ask-ok">OK</button></div>
+  </div>
+</div>
+
+<!-- Export dialog -->
+<div class="backdrop" id="export" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="export-title">
+    <h2 id="export-title">Export label</h2>
+    <div class="dialog-body">
+      <label class="field"><span>Format</span>
+        <select class="input" id="ex-format"><option value="png">PNG – sharp, supports transparency</option><option value="jpg">JPG – smaller file, white background</option><option value="svg">SVG – vector, scales to any size</option></select>
+      </label>
+      <label class="field" id="ex-dpi-f"><span>Resolution</span>
+        <select class="input" id="ex-dpi"><option value="203">203 DPI – Zebra and most thermal printers</option><option value="300" selected>300 DPI – Dymo LabelWriter, Brother QL</option><option value="600">600 DPI – high quality / laser sheets</option><option value="96">96 DPI – screen and web</option></select>
+      </label>
+      <label class="check" id="ex-transp-f"><input type="checkbox" id="ex-transp"> Transparent background</label>
+      <label class="field"><span>File name</span><input class="input" id="ex-name"></label>
+      <span class="out-size" id="ex-size"></span>
+    </div>
+    <div class="dialog-actions"><button class="btn" id="ex-cancel">Cancel</button><button class="btn primary" id="ex-go">Export</button></div>
+  </div>
+</div>
+
+<!-- Info dialog (help, export result inside embedded viewers) -->
+<div class="backdrop" id="info" hidden>
+  <div class="dialog wide" role="dialog" aria-modal="true" aria-labelledby="info-title">
+    <h2 id="info-title"></h2>
+    <div class="help" id="info-body"></div>
+    <div class="dialog-actions" style="margin-top:16px"><button class="btn primary" id="info-close">Close</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<input type="file" id="open-input" accept=".json,.label,application/json" hidden>
+<input type="file" id="image-input" accept="image/*" hidden>
+<div id="print-area"></div>
+
+<script src="lib/fabric.min.js"></script>
+<script src="lib/JsBarcode.all.min.js"></script>
+<script src="lib/qrcode.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // =====================================================================
+  // Units. The design is modelled in pixels at 300 DPI; everything the
+  // user sees is in mm or inches.
+  // =====================================================================
+  const DPI = 300;
+  const px = (mm) => mm / 25.4 * DPI;
+  const mmOf = (p) => p / DPI * 25.4;
+  const ptToPx = (pt) => pt / 72 * DPI;
+  const pxToPt = (p) => p / DPI * 72;
+  const IN = (i) => +(i * 25.4).toFixed(2);
+  let unit = 'mm';
+  const toUnit = (mm) => unit === 'in' ? +(mm / 25.4).toFixed(3) : +mm.toFixed(1);
+  const fromUnit = (v) => unit === 'in' ? v * 25.4 : v;
+  const fmtSize = (w, h) => unit === 'in'
+    ? `${(w / 25.4).toFixed(2)} × ${(h / 25.4).toFixed(2)} in`
+    : `${+w.toFixed(1)} × ${+h.toFixed(1)} mm`;
+
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+
+  // =====================================================================
+  // Label stock catalogue (sizes as width × height in mm, shown landscape
+  // where the label feeds that way).
+  // =====================================================================
+  const tape = (brand, w, len) => ({ code: `${brand} ${w} mm`, name: 'Continuous tape', w: len, h: w, shape: 'tape' });
+  const STOCK = [
+    ['Dymo LabelWriter', [
+      { code: '30252', name: 'Address', w: 89, h: 28 },
+      { code: '30321', name: 'Large address', w: 89, h: 36 },
+      { code: '30330', name: 'Return address', w: 51, h: 19 },
+      { code: '30334', name: 'Multipurpose', w: 57, h: 32 },
+      { code: '30336', name: 'Small multipurpose', w: 54, h: 25 },
+      { code: '30332', name: 'Square multipurpose', w: 25, h: 25 },
+      { code: '30323', name: 'Shipping', w: 101, h: 54 },
+      { code: '30256', name: 'Large shipping', w: 102, h: 59 },
+      { code: '30258', name: 'Diskette', w: 70, h: 54 },
+      { code: '30347', name: 'Book spine', w: 38, h: 25 },
+      { code: '30346', name: 'Library', w: 48, h: 13 },
+      { code: '30364', name: 'Name badge', w: 102, h: 59 },
+      { code: '30857', name: 'Name badge, non-adhesive', w: 102, h: 57 },
+      { code: '1744907', name: '4XL shipping 4 × 6 in', w: 102, h: 152 },
+      { code: '99010', name: 'Standard address', w: 89, h: 28 },
+      { code: '99012', name: 'Large address', w: 89, h: 36 },
+      { code: '99014', name: 'Shipping', w: 101, h: 54 },
+      { code: '11352', name: 'Return address', w: 54, h: 25 },
+      { code: '11354', name: 'Multipurpose', w: 57, h: 32 },
+      { code: '11355', name: 'Multipurpose', w: 51, h: 19 },
+    ]],
+    ['Dymo D1 tape', [6, 9, 12, 19, 24].map((w) => tape('Dymo D1', w, 60))],
+    ['Brother DK', [
+      { code: 'DK-1201', name: 'Standard address', w: 90, h: 29 },
+      { code: 'DK-1208', name: 'Large address', w: 90, h: 38 },
+      { code: 'DK-1209', name: 'Small address', w: 62, h: 29 },
+      { code: 'DK-1202', name: 'Shipping', w: 100, h: 62 },
+      { code: 'DK-1204', name: 'Multipurpose', w: 54, h: 17 },
+      { code: 'DK-1203', name: 'File folder', w: 87, h: 17 },
+      { code: 'DK-1221', name: 'Square', w: 23, h: 23 },
+      { code: 'DK-1218', name: 'Round 24 mm', w: 24, h: 24, shape: 'round' },
+      { code: 'DK-1219', name: 'Round 12 mm', w: 12, h: 12, shape: 'round' },
+      { code: 'DK-2205', name: 'Continuous 62 mm', w: 100, h: 62, shape: 'tape' },
+      { code: 'DK-2225', name: 'Continuous 38 mm', w: 90, h: 38, shape: 'tape' },
+      { code: 'DK-2210', name: 'Continuous 29 mm', w: 90, h: 29, shape: 'tape' },
+      { code: 'DK-2214', name: 'Continuous 12 mm', w: 60, h: 12, shape: 'tape' },
+    ]],
+    ['Brother TZe tape', [6, 9, 12, 18, 24, 36].map((w) => tape('Brother TZe', w, 60))],
+    ['Zebra / thermal', [
+      ['4 × 6 in', 4, 6], ['4 × 4 in', 4, 4], ['4 × 3 in', 4, 3], ['4 × 2 in', 4, 2], ['4 × 1 in', 4, 1],
+      ['3 × 2 in', 3, 2], ['3 × 1 in', 3, 1], ['2.25 × 1.25 in', 2.25, 1.25], ['2 × 1 in', 2, 1], ['1.5 × 1 in', 1.5, 1],
+    ].map(([n, w, h]) => ({ code: n, name: w >= 4 && h >= 4 ? 'Shipping' : 'Direct thermal', w: IN(w), h: IN(h) }))],
+    ['Avery (US Letter sheets)', [
+      { code: '5160', name: 'Address, 30 per sheet', w: IN(2.625), h: IN(1) },
+      { code: '5161', name: 'Address, 20 per sheet', w: IN(4), h: IN(1) },
+      { code: '5162', name: 'Address, 14 per sheet', w: IN(4), h: IN(1.333) },
+      { code: '5163', name: 'Shipping, 10 per sheet', w: IN(4), h: IN(2) },
+      { code: '5164', name: 'Shipping, 6 per sheet', w: IN(4), h: IN(3.333) },
+      { code: '5167', name: 'Return address, 80 per sheet', w: IN(1.75), h: IN(0.5) },
+      { code: '5195', name: 'Return address, 60 per sheet', w: IN(1.75), h: IN(0.667) },
+      { code: '5366', name: 'File folder', w: IN(3.4375), h: IN(0.667) },
+      { code: '22805', name: 'Square 1.5 in', w: IN(1.5), h: IN(1.5) },
+      { code: '22807', name: 'Round 2 in', w: IN(2), h: IN(2), shape: 'round' },
+      { code: '5294', name: 'Round 2.5 in', w: IN(2.5), h: IN(2.5), shape: 'round' },
+    ]],
+    ['Avery (A4 sheets)', [
+      { code: 'L7160', name: '21 per sheet', w: 63.5, h: 38.1 },
+      { code: 'L7163', name: '14 per sheet', w: 99.1, h: 38.1 },
+      { code: 'L7165', name: '8 per sheet', w: 99.1, h: 67.7 },
+      { code: 'L7173', name: '10 per sheet', w: 99.1, h: 57 },
+      { code: 'L7651', name: '65 per sheet', w: 38.1, h: 21.2 },
+    ]],
+  ];
+  STOCK.forEach(([brand, items]) => items.forEach((s) => { s.brand = brand; s.shape = s.shape || 'rect'; s.id = brand + '|' + s.code + '|' + s.name; }));
+  const ALL_STOCK = STOCK.flatMap(([, items]) => items);
+
+  const FONTS = ['Arial', 'Helvetica', 'Verdana', 'Tahoma', 'Trebuchet MS', 'Georgia', 'Times New Roman', 'Courier New', 'Impact',
+    'Barlow Condensed', 'Oswald', 'Roboto Mono', 'Archivo Black'];
+  const BARCODES = [
+    ['CODE128', 'Code 128 – letters and numbers (most common)', 'LC-000123'],
+    ['CODE39', 'Code 39 – capitals, numbers, - . $ / + %', 'ABC-123'],
+    ['EAN13', 'EAN-13 – retail products (12 or 13 digits)', '5901234123457'],
+    ['EAN8', 'EAN-8 – small retail products (7 or 8 digits)', '96385074'],
+    ['UPC', 'UPC-A – US retail (11 or 12 digits)', '036000291452'],
+    ['ITF14', 'ITF-14 – shipping cartons (13 or 14 digits)', '15400141288763'],
+    ['ITF', 'Interleaved 2 of 5 – even number of digits', '1234567890'],
+    ['codabar', 'Codabar – libraries, blood banks', 'A12345B'],
+    ['MSI', 'MSI – shelf labels (digits)', '1234567'],
+    ['pharmacode', 'Pharmacode – pharmaceutical packaging (3–131070)', '1234'],
+  ];
+
+  // =====================================================================
+  // Canvas
+  // =====================================================================
+  const PROPS = ['kind', 'bc', 'invert'];
+  fabric.Object.prototype.set({
+    transparentCorners: false, cornerColor: '#ffffff', cornerStrokeColor: '#c8322b', borderColor: '#c8322b',
+    cornerStyle: 'circle', cornerSize: 10, borderScaleFactor: 1.5, padding: 0,
+  });
+  const canvas = new fabric.Canvas('c', { backgroundColor: '#ffffff', preserveObjectStacking: true, selectionColor: 'rgba(200,50,43,.08)', selectionBorderColor: '#c8322b' });
+
+  const frame = document.getElementById('frame');
+  const desk = document.getElementById('desk');
+  const safeEl = document.getElementById('safe');
+  let label = null;      // { id, brand, code, name, w, h, shape }
+  let zoom = 1;
+  let showSafe = true;
+  let snapping = true;
+
+  function labelPx() { return { w: px(label.w), h: px(label.h) }; }
+
+  function applyLabel(next, { shiftObjects = true } = {}) {
+    const prev = label;
+    label = { ...next };
+    if (prev && shiftObjects) {
+      const dx = (px(label.w) - px(prev.w)) / 2, dy = (px(label.h) - px(prev.h)) / 2;
+      canvas.getObjects().forEach((o) => { o.left += dx; o.top += dy; o.setCoords(); });
+    }
+    const { w, h } = labelPx();
+    canvas.clipPath = label.shape === 'round'
+      ? new fabric.Ellipse({ rx: w / 2, ry: h / 2, left: 0, top: 0, absolutePositioned: true })
+      : null;
+    frame.className = 'label-frame' + (label.shape === 'round' ? ' round' : label.shape === 'tape' ? ' tape' : '');
+    frame.style.borderRadius = label.shape === 'rect' ? (px(1.6) * zoom) + 'px' : '';
+    renderStockList();
+    updateTapeUi();
+    setZoom(zoom, false);
+    refreshStatus();
+  }
+
+  function setZoom(z, keep = true) {
+    zoom = Math.min(8, Math.max(0.05, z));
+    const { w, h } = labelPx();
+    canvas.setDimensions({ width: Math.round(w * zoom), height: Math.round(h * zoom) });
+    canvas.setZoom(zoom);
+    if (label.shape === 'rect') frame.style.borderRadius = (px(1.6) * zoom) + 'px';
+    const m = px(label.shape === 'tape' ? 1 : 1.5) * zoom;
+    Object.assign(safeEl.style, { left: m + 'px', top: m + 'px', right: m + 'px', bottom: m + 'px' });
+    safeEl.hidden = !showSafe;
+    document.getElementById('zoom-val').textContent = Math.round(zoom / (96 / DPI) * 100) + '%';
+    canvas.requestRenderAll();
+  }
+  function fitZoom() {
+    const { w, h } = labelPx();
+    const aw = desk.clientWidth - 80, ah = desk.clientHeight - 80;
+    if (aw < 40 || ah < 40) { setZoom(zoom); return; } // workspace hidden or tiny: refit once it has a size
+    setZoom(Math.min(aw / w, ah / h, 6 * 96 / DPI));
+  }
+  new ResizeObserver(() => { if (label && autoFit) fitZoom(); }).observe(desk);
+  let autoFit = true;
+
+  // =====================================================================
+  // Object factories
+  // =====================================================================
+  const centre = () => ({ left: labelPx().w / 2, top: labelPx().h / 2 });
+  const base = () => ({ ...centre(), originX: 'center', originY: 'center' });
+
+  function makeText(text, opts = {}) {
+    return new fabric.IText(text, {
+      ...base(), kind: 'text', fontFamily: 'Arial', fontSize: ptToPx(12), fill: '#000000',
+      textAlign: 'left', lineHeight: 1.1, ...opts,
+    });
+  }
+
+  function barcodeBars(bc) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    let ok = true;
+    JsBarcode(svg, bc.value, { format: bc.type, width: 1, height: 100, margin: 0, displayValue: false, background: '', valid: (v) => { ok = v; } });
+    if (!ok || !svg.getAttribute('width')) throw new Error(`“${bc.value}” is not valid for this barcode type.`);
+    const modules = parseFloat(svg.getAttribute('width'));
+    const bars = [...svg.querySelectorAll('rect')].filter((r) => r.parentNode !== svg).map((r) => {
+      let ox = 0, oy = 0, n = r.parentNode;
+      while (n && n !== svg) {
+        const m = /translate\(\s*([-\d.]+)[ ,]+([-\d.]+)/.exec(n.getAttribute('transform') || '');
+        if (m) { ox += +m[1]; oy += +m[2]; }
+        n = n.parentNode;
+      }
+      return { x: +r.getAttribute('x') + ox, y: +r.getAttribute('y') + oy, w: +r.getAttribute('width'), h: +r.getAttribute('height') };
+    });
+    return { modules, bars };
+  }
+
+  function buildBarcode(bc) {
+    if (bc.type === 'QR') return buildQR(bc);
+    const { modules, bars } = barcodeBars(bc);
+    const W = px(bc.wmm), H = px(bc.hmm);
+    const textH = bc.showText ? Math.min(H * 0.3, px(3.5)) : 0;
+    const barsH = H - textH;
+    const m = W / modules;
+    let d = '';
+    bars.forEach((b) => { d += `M${b.x * m} ${b.y / 100 * barsH}h${b.w * m}v${b.h / 100 * barsH}h${-b.w * m}z`; });
+    const parts = [new fabric.Rect({ left: 0, top: 0, width: W, height: H, fill: 'rgba(0,0,0,0)', strokeWidth: 0 })];
+    parts.push(new fabric.Path(d, { fill: '#000000', strokeWidth: 0, objectCaching: false }));
+    if (bc.showText) {
+      const t = new fabric.Text(bc.value, { fontFamily: 'Roboto Mono', fontSize: textH * 0.9, fill: '#000000', originX: 'center', left: W / 2, top: barsH + textH * 0.08 });
+      if (t.width > W) t.set('fontSize', t.fontSize * W / t.width);
+      parts.push(t);
+    }
+    const g = new fabric.Group(parts, { originX: 'center', originY: 'center', kind: 'barcode', bc: { ...bc }, lockScalingFlip: true });
+    return g;
+  }
+
+  function buildQR(bc) {
+    let q;
+    try { q = qrcode(0, bc.ecc || 'M'); q.addData(bc.value || ' '); q.make(); }
+    catch (e) { throw new Error('That is too much data for a QR code. Shorten it or lower the error correction.'); }
+    const n = q.getModuleCount(), S = px(bc.wmm), s = S / n;
+    let d = '';
+    for (let r = 0; r < n; r++) {
+      let c = 0;
+      while (c < n) {
+        if (!q.isDark(r, c)) { c++; continue; }
+        const start = c; while (c < n && q.isDark(r, c)) c++;
+        d += `M${start * s} ${r * s}h${(c - start) * s}v${s}h${-(c - start) * s}z`;
+      }
+    }
+    const parts = [new fabric.Rect({ left: 0, top: 0, width: S, height: S, fill: 'rgba(0,0,0,0)', strokeWidth: 0 }),
+      new fabric.Path(d, { fill: '#000000', strokeWidth: 0, objectCaching: false })];
+    return new fabric.Group(parts, { originX: 'center', originY: 'center', kind: 'barcode', bc: { ...bc, hmm: bc.wmm }, lockScalingFlip: true, lockUniScaling: true });
+  }
+
+  function replaceBarcode(old, bc) {
+    let g;
+    try { g = buildBarcode(bc); } catch (e) { return e.message; }
+    const c = old.getCenterPoint();
+    g.set({ left: c.x, top: c.y, angle: old.angle });
+    const idx = canvas.getObjects().indexOf(old);
+    quiet(() => { canvas.remove(old); canvas.insertAt(g, idx); });
+    canvas.setActiveObject(g);
+    g.setCoords();
+    canvas.requestRenderAll();
+    pushHistory();
+    return null;
+  }
+
+  function add(obj) {
+    canvas.add(obj);
+    canvas.setActiveObject(obj);
+    obj.setCoords();
+    canvas.requestRenderAll();
+  }
+  const fitW = (mm) => Math.min(mm, label.w * 0.8);
+  const fitH = (mm) => Math.min(mm, label.h * 0.7);
+
+  function addText() { add(makeText('Label text', { fontSize: ptToPx(Math.max(6, Math.min(14, pxToPt(px(label.h)) * 0.3))) })); }
+  function addBarcode() {
+    const g = buildBarcode({ type: 'CODE128', value: 'LC-000123', showText: true, wmm: fitW(45), hmm: fitH(14) });
+    g.set(centre()); add(g);
+  }
+  function addQR() {
+    const g = buildBarcode({ type: 'QR', value: 'https://example.com', ecc: 'M', wmm: Math.min(label.w, label.h) * 0.6 });
+    g.set(centre()); add(g);
+  }
+  function addRect() { add(new fabric.Rect({ ...base(), kind: 'rect', width: px(fitW(30)), height: px(fitH(12)), fill: 'rgba(0,0,0,0)', stroke: '#000000', strokeWidth: px(0.4), strokeUniform: true, rx: px(1), ry: px(1) })); }
+  function addEllipse() { add(new fabric.Ellipse({ ...base(), kind: 'ellipse', rx: px(fitW(20)) / 2, ry: px(fitH(12)) / 2, fill: 'rgba(0,0,0,0)', stroke: '#000000', strokeWidth: px(0.4), strokeUniform: true })); }
+  function addLine() { const l = px(fitW(40)); add(new fabric.Line([0, 0, l, 0], { ...base(), kind: 'line', stroke: '#000000', strokeWidth: px(0.4), strokeUniform: true })); }
+  const imageInput = document.getElementById('image-input');
+  imageInput.onchange = () => {
+    const f = imageInput.files[0]; imageInput.value = '';
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => fabric.Image.fromURL(r.result, (img) => {
+      const maxW = px(label.w * 0.6), maxH = px(label.h * 0.7);
+      img.scale(Math.min(maxW / img.width, maxH / img.height));
+      img.set({ ...base(), kind: 'image' });
+      add(img);
+    });
+    r.readAsDataURL(f);
+  };
+
+  // =====================================================================
+  // Selection-aware actions
+  // =====================================================================
+  const active = () => canvas.getActiveObject();
+  function modified(o) { o.setCoords(); canvas.requestRenderAll(); canvas.fire('object:modified', { target: o }); }
+
+  function rotateBy(d) {
+    const o = active(); if (!o) { toast('Select something on the label to rotate it.'); return; }
+    o.rotate(((o.angle || 0) + d + 360) % 360);
+    modified(o);
+  }
+  function alignTo(where) {
+    const o = active(); if (!o) return;
+    const r = o.getBoundingRect(true, true), { w, h } = labelPx();
+    const dx = { left: -r.left, hcenter: (w - r.width) / 2 - r.left, right: w - r.width - r.left }[where];
+    const dy = { top: -r.top, vcenter: (h - r.height) / 2 - r.top, bottom: h - r.height - r.top }[where];
+    if (dx !== undefined) o.left += dx;
+    if (dy !== undefined) o.top += dy;
+    modified(o);
+  }
+  function nudge(dxmm, dymm) { const o = active(); if (!o) return; o.left += px(dxmm); o.top += px(dymm); modified(o); }
+  function removeSelected() {
+    const o = active(); if (!o || o.isEditing) return;
+    const list = o.type === 'activeSelection' ? o.getObjects() : [o];
+    canvas.discardActiveObject();
+    quiet(() => list.forEach((x) => canvas.remove(x)));
+    canvas.requestRenderAll(); pushHistory();
+  }
+  let clipboard = null;
+  function copySel(cb) { const o = active(); if (!o) return; o.clone((c) => { clipboard = c; cb && cb(); }, PROPS); }
+  function paste() {
+    if (!clipboard) return;
+    clipboard.clone((c) => {
+      canvas.discardActiveObject();
+      c.set({ left: c.left + px(2), top: c.top + px(2), evented: true });
+      if (c.type === 'activeSelection') {
+        c.canvas = canvas;
+        quiet(() => c.forEachObject((x) => canvas.add(x)));
+        c.setCoords();
+      } else quiet(() => canvas.add(c));
+      clipboard.left += px(2); clipboard.top += px(2);
+      canvas.setActiveObject(c); canvas.requestRenderAll(); pushHistory();
+    }, PROPS);
+  }
+  function duplicate() { copySel(paste); }
+  function cutSel() { copySel(removeSelected); }
+  function selectAll() {
+    canvas.discardActiveObject();
+    const objs = canvas.getObjects(); if (!objs.length) return;
+    canvas.setActiveObject(objs.length === 1 ? objs[0] : new fabric.ActiveSelection(objs, { canvas }));
+    canvas.requestRenderAll();
+  }
+  function order(front) { const o = active(); if (!o) return; front ? o.bringToFront() : o.sendToBack(); modified(o); }
+
+  // Turn the whole label 90°, keeping the design.
+  function turnLabel() {
+    const old = labelPx();
+    canvas.discardActiveObject();
+    const next = { ...label, w: label.h, h: label.w };
+    quiet(() => canvas.getObjects().forEach((o) => {
+      const c = o.getCenterPoint();
+      o.setPositionByOrigin(new fabric.Point(old.h - c.y, c.x), 'center', 'center');
+      o.rotate(((o.angle || 0) + 90) % 360);
+      o.setCoords();
+    }));
+    applyLabel(next, { shiftObjects: false });
+    fitZoom(); pushHistory(); showProps();
+  }
+
+  // Bake text scaling into the font size so sizes stay readable; rebuild barcodes at their new size.
+  canvas.on('object:modified', (e) => {
+    const o = e.target; if (!o) return;
+    if (o.kind === 'text' && (o.scaleX !== 1 || o.scaleY !== 1)) {
+      const s = o.scaleY;
+      o.set({ fontSize: o.fontSize * s, scaleX: o.scaleX / s, scaleY: 1 });
+      if (Math.abs(o.scaleX - 1) < 0.02) o.set('scaleX', 1);
+      o.setCoords();
+    }
+    if (o.kind === 'barcode' && (Math.abs(o.scaleX - 1) > 0.001 || Math.abs(o.scaleY - 1) > 0.001)) {
+      const bc = { ...o.bc, wmm: mmOf(o.getScaledWidth()), hmm: mmOf(o.getScaledHeight()) };
+      if (bc.type === 'QR') bc.wmm = bc.hmm = (bc.wmm + bc.hmm) / 2;
+      const err = replaceBarcode(o, bc);
+      if (err) toast(err);
+      return; // replaceBarcode pushes history
+    }
+    pushHistory();
+    showProps();
+  });
+
+  // Centre snapping guides while dragging
+  let guides = { v: false, h: false };
+  canvas.on('object:moving', (e) => {
+    if (!snapping) return;
+    const o = e.target, c = o.getCenterPoint(), { w, h } = labelPx(), tol = px(1) * Math.max(1, 0.5 / zoom * 96 / DPI);
+    guides = { v: Math.abs(c.x - w / 2) < tol, h: Math.abs(c.y - h / 2) < tol };
+    if (guides.v || guides.h) o.setPositionByOrigin(new fabric.Point(guides.v ? w / 2 : c.x, guides.h ? h / 2 : c.y), 'center', 'center');
+  });
+  canvas.on('mouse:up', () => { if (guides.v || guides.h) { guides = { v: false, h: false }; canvas.requestRenderAll(); } });
+  canvas.on('after:render', (e) => {
+    if (!guides.v && !guides.h) return;
+    const ctx = e.ctx || canvas.contextContainer, { w, h } = labelPx();
+    ctx.save(); ctx.transform(...canvas.viewportTransform);
+    ctx.strokeStyle = '#c8322b'; ctx.lineWidth = 1 / zoom; ctx.setLineDash([4 / zoom, 3 / zoom]);
+    ctx.beginPath();
+    if (guides.v) { ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); }
+    if (guides.h) { ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); }
+    ctx.stroke(); ctx.restore();
+  });
+
+  // =====================================================================
+  // Properties panel
+  // =====================================================================
+  const $ = (id) => document.getElementById(id);
+  const kindOf = (o) => o.kind || (o.type === 'i-text' || o.type === 'text' ? 'text' : o.type);
+  $('t-font').innerHTML = FONTS.map((f) => `<option style="font-family:'${f}'">${f}</option>`).join('');
+  $('b-type').innerHTML = BARCODES.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
+
+  function showProps() {
+    const o = active();
+    $('p-none').hidden = !!o;
+    $('p-obj').hidden = !o;
+    ['p-text', 'p-barcode', 'p-qr', 'p-shape', 'p-image'].forEach((id) => { $(id).hidden = true; });
+    document.querySelectorAll('[data-rot], #rot-cw, #rot-ccw, #rot-180').forEach((b) => { b.disabled = !o; });
+    if (!o) {
+      $('props-title').textContent = 'Label';
+      $('p-stock-name').textContent = `${label.brand === 'Custom' ? 'Custom' : label.brand + ' ' + label.code} – ${label.name}`;
+      $('p-stock-size').textContent = fmtSize(label.w, label.h) + (label.shape === 'round' ? ', round' : label.shape === 'tape' ? ', continuous' : '');
+      return;
+    }
+    const multi = o.type === 'activeSelection';
+    const k = multi ? 'multi' : kindOf(o);
+    $('props-title').textContent = { multi: `${o.size()} items`, text: 'Text', barcode: o.bc?.type === 'QR' ? 'QR code' : 'Barcode', rect: 'Box', ellipse: 'Ellipse', line: 'Line', image: 'Image' }[k] || 'Item';
+    $('unit-note').textContent = `(${unit})`;
+    const r = o.getBoundingRect(true, true);
+    $('p-x').value = toUnit(mmOf(r.left));
+    $('p-y').value = toUnit(mmOf(r.top));
+    $('p-w').value = toUnit(mmOf(o.getScaledWidth()));
+    $('p-h').value = toUnit(mmOf(o.getScaledHeight()));
+    $('p-size-row').hidden = multi || k === 'text';
+    $('p-h').disabled = k === 'line' || o.bc?.type === 'QR';
+    $('p-angle').value = Math.round(o.angle || 0);
+    if (k === 'text') {
+      $('p-text').hidden = false;
+      if (document.activeElement !== $('t-content')) $('t-content').value = o.text;
+      $('t-font').value = o.fontFamily;
+      $('t-size').value = +pxToPt(o.fontSize).toFixed(1);
+      $('t-color').value = /^#[0-9a-f]{6}$/i.test(o.fill) ? o.fill : '#000000';
+      $('t-bold').setAttribute('aria-pressed', o.fontWeight === 'bold');
+      $('t-italic').setAttribute('aria-pressed', o.fontStyle === 'italic');
+      $('t-underline').setAttribute('aria-pressed', !!o.underline);
+      document.querySelectorAll('[data-talign]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.talign === o.textAlign));
+      $('t-spacing').value = o.charSpacing || 0;
+      $('t-lineh').value = o.lineHeight;
+      $('t-invert').checked = !!o.invert;
+    } else if (k === 'barcode' && o.bc.type === 'QR') {
+      $('p-qr').hidden = false;
+      if (document.activeElement !== $('q-value')) $('q-value').value = o.bc.value;
+      $('q-ecc').value = o.bc.ecc || 'M';
+    } else if (k === 'barcode') {
+      $('p-barcode').hidden = false;
+      $('b-type').value = o.bc.type;
+      if (document.activeElement !== $('b-value')) $('b-value').value = o.bc.value;
+      $('b-text').checked = !!o.bc.showText;
+      const mod = (() => { try { return barcodeBars(o.bc).modules; } catch (e) { return 0; } })();
+      const narrow = mod ? o.bc.wmm / mod : 0;
+      $('b-hint').textContent = mod ? `Narrowest bar: ${narrow.toFixed(2)} mm (${(px(narrow)).toFixed(1)} dots at 300 DPI). ${narrow < 0.19 ? 'This may be too fine to print and scan reliably. Make the barcode wider or shorten the data.' : 'Scanners read this comfortably.'}` : '';
+    } else if (k === 'rect' || k === 'ellipse' || k === 'line') {
+      $('p-shape').hidden = false;
+      const val = (c) => (!c || c === 'rgba(0,0,0,0)' || c === 'transparent') ? 'none' : c;
+      $('s-fill').value = val(o.fill); $('s-fill').disabled = k === 'line';
+      $('s-stroke').value = val(o.stroke);
+      $('s-sw').value = +mmOf(o.strokeWidth || 0).toFixed(2);
+      $('s-radius-f').hidden = k !== 'rect';
+      if (k === 'rect') $('s-radius').value = +mmOf(o.rx || 0).toFixed(1);
+    } else if (k === 'image') {
+      $('p-image').hidden = false;
+      $('i-bw').checked = !!(o.filters && o.filters.length);
+    }
+  }
+  ['selection:created', 'selection:updated', 'selection:cleared', 'object:moving', 'object:scaling', 'object:rotating', 'text:changed'].forEach((ev) => canvas.on(ev, showProps));
+
+  const num = (id) => parseFloat($(id).value);
+  $('p-x').onchange = () => { const o = active(); if (!o) return; const r = o.getBoundingRect(true, true); o.left += px(fromUnit(num('p-x'))) - r.left; modified(o); };
+  $('p-y').onchange = () => { const o = active(); if (!o) return; const r = o.getBoundingRect(true, true); o.top += px(fromUnit(num('p-y'))) - r.top; modified(o); };
+  function setSize() {
+    const o = active(); if (!o) return;
+    const w = Math.max(0.5, fromUnit(num('p-w'))), h = Math.max(0.5, fromUnit(num('p-h')));
+    if (o.kind === 'barcode') {
+      const err = replaceBarcode(o, { ...o.bc, wmm: w, hmm: o.bc.type === 'QR' ? w : h });
+      if (err) toast(err); return;
+    }
+    if (o.type === 'line') o.set({ scaleX: px(w) / o.width });
+    else o.set({ scaleX: px(w) / o.width, scaleY: px(h) / o.height });
+    modified(o);
+  }
+  $('p-w').onchange = setSize; $('p-h').onchange = setSize;
+  $('p-angle').onchange = () => { const o = active(); if (!o) return; o.rotate(((num('p-angle') || 0) % 360 + 360) % 360); modified(o); };
+  document.querySelectorAll('[data-rot]').forEach((b) => { b.onclick = () => rotateBy(+b.dataset.rot); });
+  document.querySelectorAll('[data-align]').forEach((b) => { b.onclick = () => alignTo(b.dataset.align); });
+
+  // Text
+  const txt = (fn) => { const o = active(); if (!o || kindOf(o) !== 'text') return; fn(o); o.initDimensions(); modified(o); };
+  $('t-content').oninput = () => txt((o) => o.set('text', $('t-content').value || ' '));
+  $('t-font').onchange = () => { const f = $('t-font').value; ensureFont(f).then(() => txt((o) => o.set('fontFamily', f))); };
+  $('t-size').onchange = () => txt((o) => o.set('fontSize', ptToPx(Math.max(2, num('t-size')))));
+  $('t-color').oninput = () => txt((o) => { o.set('fill', $('t-color').value); if (o.invert) o.set('textBackgroundColor', o.fill === '#ffffff' ? '#000000' : ''); });
+  $('t-bold').onclick = () => txt((o) => o.set('fontWeight', o.fontWeight === 'bold' ? 'normal' : 'bold'));
+  $('t-italic').onclick = () => txt((o) => o.set('fontStyle', o.fontStyle === 'italic' ? 'normal' : 'italic'));
+  $('t-underline').onclick = () => txt((o) => o.set('underline', !o.underline));
+  document.querySelectorAll('[data-talign]').forEach((b) => { b.onclick = () => txt((o) => o.set('textAlign', b.dataset.talign)); });
+  $('t-spacing').onchange = () => txt((o) => o.set('charSpacing', num('t-spacing') || 0));
+  $('t-lineh').onchange = () => txt((o) => o.set('lineHeight', Math.max(0.6, num('t-lineh') || 1)));
+  $('t-invert').onchange = () => txt((o) => {
+    const on = $('t-invert').checked;
+    o.set({ invert: on, fill: on ? '#ffffff' : '#000000', textBackgroundColor: on ? '#000000' : '' });
+  });
+
+  // Barcode + QR
+  function updateBc(patch, errId) {
+    const o = active(); if (!o || o.kind !== 'barcode') return;
+    const err = replaceBarcode(o, { ...o.bc, ...patch });
+    $(errId).hidden = !err; $(errId).textContent = err || '';
+  }
+  $('b-type').onchange = () => {
+    const t = $('b-type').value, sample = BARCODES.find((b) => b[0] === t)[2];
+    const o = active();
+    let value = $('b-value').value;
+    try { barcodeBars({ type: t, value }); } catch (e) { value = sample; }
+    updateBc({ type: t, value }, 'b-error');
+    $('b-value').value = active()?.bc?.value || value;
+  };
+  $('b-value').oninput = () => updateBc({ value: $('b-value').value }, 'b-error');
+  $('b-text').onchange = () => updateBc({ showText: $('b-text').checked }, 'b-error');
+  $('q-value').oninput = () => updateBc({ value: $('q-value').value }, 'q-error');
+  $('q-ecc').onchange = () => updateBc({ ecc: $('q-ecc').value }, 'q-error');
+
+  // Shapes
+  const shp = (fn) => { const o = active(); if (!o || !['rect', 'ellipse', 'line'].includes(kindOf(o))) return; fn(o); modified(o); };
+  const colorVal = (v) => v === 'none' ? 'rgba(0,0,0,0)' : v;
+  $('s-fill').onchange = () => shp((o) => o.set('fill', colorVal($('s-fill').value)));
+  $('s-stroke').onchange = () => shp((o) => o.set('stroke', $('s-stroke').value === 'none' ? null : $('s-stroke').value));
+  $('s-sw').onchange = () => shp((o) => o.set('strokeWidth', px(Math.max(0, num('s-sw') || 0))));
+  $('s-radius').onchange = () => shp((o) => { const r = px(Math.max(0, num('s-radius') || 0)) / (o.scaleX || 1); o.set({ rx: r, ry: r }); });
+
+  // Image
+  $('i-bw').onchange = () => {
+    const o = active(); if (!o || o.type !== 'image') return;
+    o.filters = $('i-bw').checked ? [new fabric.Image.filters.Grayscale(), new fabric.Image.filters.Contrast({ contrast: 0.35 })] : [];
+    o.applyFilters(); modified(o);
+  };
+
+  $('o-front').onclick = () => order(true);
+  $('o-back').onclick = () => order(false);
+  $('o-dup').onclick = duplicate;
+  $('o-del').onclick = removeSelected;
+  $('label-rotate').onclick = turnLabel;
+  $('label-clear').onclick = clearLabel;
+
+  // =====================================================================
+  // Fonts
+  // =====================================================================
+  function ensureFont(f) {
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    return Promise.all([document.fonts.load(`16px "${f}"`), document.fonts.load(`bold 16px "${f}"`)]).catch(() => {});
+  }
+  function refreshText() {
+    fabric.util.clearFabricFontCache();
+    canvas.getObjects().forEach((o) => { if (o.initDimensions) { o.initDimensions(); o.setCoords(); } o.dirty = true; });
+    canvas.requestRenderAll();
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refreshText);
+
+  // =====================================================================
+  // Label stock panel
+  // =====================================================================
+  const brandSel = $('stock-brand'), searchEl = $('stock-search');
+  brandSel.innerHTML = '<option value="">All brands</option>' + STOCK.map(([b]) => `<option>${b}</option>`).join('');
+  brandSel.onchange = renderStockList; searchEl.oninput = renderStockList;
+  function thumb(s) {
+    const r = s.w / s.h, W = r >= 1 ? 32 : Math.max(8, 24 * r), H = r >= 1 ? Math.max(4, 32 / r) : 24;
+    return `<i class="${s.shape}" style="width:${Math.min(32, W)}px;height:${Math.min(24, H)}px"></i>`;
+  }
+  function renderStockList() {
+    const q = searchEl.value.trim().toLowerCase(), b = brandSel.value;
+    let html = '', count = 0;
+    STOCK.forEach(([brand, items]) => {
+      if (b && b !== brand) return;
+      const list = items.filter((s) => !q || `${brand} ${s.code} ${s.name} ${s.w}x${s.h} ${s.w}×${s.h}`.toLowerCase().includes(q));
+      if (!list.length) return;
+      count += list.length;
+      html += `<div class="stock-group">${brand}</div>`;
+      list.forEach((s) => {
+        const on = label && label.id === s.id;
+        const size = s.shape === 'tape' ? (unit === 'in' ? `${(s.h / 25.4).toFixed(2)} in tape` : `${s.h} mm tape`) : fmtSize(s.w, s.h);
+        html += `<button class="stock" data-id="${s.id}" aria-pressed="${on}"><span class="stock-thumb">${thumb(s)}</span><span class="stock-name"><b>${s.code}</b><small>${s.name}</small></span><span class="stock-size">${size}</span></button>`;
+      });
+    });
+    $('stock-list').innerHTML = html || '<p class="hint" style="padding:12px 6px">No labels match. Try a size like “89” or a code like “30252”, or set a custom size below.</p>';
+    $('stock-count').textContent = count;
+  }
+  $('stock-list').onclick = (e) => {
+    const b = e.target.closest('.stock'); if (!b) return;
+    const s = ALL_STOCK.find((x) => x.id === b.dataset.id);
+    const keepTapeLen = s.shape === 'tape' && label && label.shape === 'tape' ? label.w : s.w;
+    applyLabel({ ...s, w: s.shape === 'tape' ? keepTapeLen : s.w });
+    fitZoom(); pushHistory(); showProps();
+    if (getComputedStyle($('toggle-left')).display !== 'none') $('left').classList.remove('open');
+  };
+  function updateTapeUi() {
+    $('tape-sec').hidden = label.shape !== 'tape';
+    $('tape-len-label').textContent = `Length (${unit})`;
+    $('tape-len').value = toUnit(label.w);
+    $('cw-label').textContent = `Width (${unit})`; $('ch-label').textContent = `Height (${unit})`;
+  }
+  $('tape-len').onchange = () => { applyLabel({ ...label, w: Math.max(10, fromUnit(num('tape-len'))) }); fitZoom(); pushHistory(); };
+  $('custom-apply').onclick = () => {
+    const w = Math.max(5, fromUnit(num('custom-w'))), h = Math.max(5, fromUnit(num('custom-h')));
+    const shape = $('custom-shape').value;
+    applyLabel({ id: 'custom', brand: 'Custom', code: 'Custom', name: shape === 'tape' ? 'Continuous tape' : 'Custom size', w, h, shape: shape === 'square' ? 'square' : shape });
+    fitZoom(); pushHistory(); showProps();
+  };
+
+  function refreshStatus() {
+    $('st-stock').textContent = label.brand === 'Custom' ? 'Custom size' : `${label.brand} ${label.code}`;
+    $('st-size').textContent = fmtSize(label.w, label.h);
+    $('st-px').textContent = `${Math.round(px(label.w))} × ${Math.round(px(label.h))} dots at 300 DPI`;
+  }
+
+  // =====================================================================
+  // Document: history, autosave, open, save, export, print
+  // =====================================================================
+  const AUTOSAVE = 'labelcraft-doc-v1', NAME_KEY = 'labelcraft-name';
+  const inFrame = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+  let docName = 'Untitled', fileHandle = null, dirty = false;
+  try { docName = localStorage.getItem(NAME_KEY) || 'Untitled'; } catch (e) {}
+
+  function docData() { return { app: 'LabelCraft', version: 1, label, canvas: canvas.toJSON(PROPS) }; }
+  function setDocName(n) { docName = n || 'Untitled'; try { localStorage.setItem(NAME_KEY, docName); } catch (e) {} renderDoc(); }
+  function setDirty(v) { dirty = v; renderDoc(); }
+  function renderDoc() { $('docname').textContent = docName; $('docname').classList.toggle('dirty', dirty); document.title = docName + ' – LabelCraft'; }
+
+  let history = [], hIndex = -1, restoring = false, quietDepth = 0, hTimer = null;
+  function quiet(fn) { quietDepth++; try { fn(); } finally { quietDepth--; } }
+  function pushHistory() {
+    if (restoring) return;
+    clearTimeout(hTimer);
+    hTimer = setTimeout(() => {
+      if (restoring) return;
+      const snap = JSON.stringify(docData());
+      if (history[hIndex] === snap) return;
+      history = history.slice(0, hIndex + 1); history.push(snap);
+      if (history.length > 100) history.shift();
+      hIndex = history.length - 1;
+      try { localStorage.setItem(AUTOSAVE, snap); $('st-save').textContent = 'Autosaved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); } catch (e) {}
+      if (history.length > 1) setDirty(true);
+    }, 120);
+  }
+  canvas.on('object:added', () => { if (!quietDepth && !restoring) pushHistory(); });
+  canvas.on('object:removed', () => { if (!quietDepth && !restoring) pushHistory(); });
+
+  function loadDoc(data, cb) {
+    if (!data || data.app !== 'LabelCraft' || !data.label || !data.canvas) throw new Error('This is not a LabelCraft label file.');
+    restoring = true;
+    canvas.discardActiveObject();
+    canvas.loadFromJSON(data.canvas, () => {
+      applyLabel(data.label, { shiftObjects: false });
+      const fonts = new Set(canvas.getObjects().map((o) => o.fontFamily).filter(Boolean));
+      Promise.all([...fonts].map(ensureFont)).then(refreshText);
+      canvas.requestRenderAll();
+      restoring = false;
+      showProps();
+      cb && cb();
+    });
+  }
+  function undo() { if (hIndex <= 0) return; hIndex--; loadDoc(JSON.parse(history[hIndex]), () => setDirty(true)); }
+  function redo() { if (hIndex >= history.length - 1) return; hIndex++; loadDoc(JSON.parse(history[hIndex]), () => setDirty(true)); }
+  function resetHistory() { history = []; hIndex = -1; clearTimeout(hTimer); const snap = JSON.stringify(docData()); history.push(snap); hIndex = 0; try { localStorage.setItem(AUTOSAVE, snap); } catch (e) {} }
+
+  // Confirm dialog
+  function ask({ title, body, ok = 'OK', danger = false }) {
+    return new Promise((resolve) => {
+      $('ask-title').textContent = title; $('ask-body').textContent = body;
+      const okB = $('ask-ok'), cB = $('ask-cancel');
+      okB.textContent = ok; okB.classList.toggle('danger', danger);
+      $('ask').hidden = false; cB.focus();
+      const done = (v) => { $('ask').hidden = true; okB.onclick = cB.onclick = $('ask').onkeydown = null; resolve(v); };
+      okB.onclick = () => done(true); cB.onclick = () => done(false);
+      $('ask').onkeydown = (e) => { if (e.key === 'Escape') done(false); };
+    });
+  }
+  async function okToDiscard(what) {
+    if (!dirty) return true;
+    return ask({ title: `Discard changes to ${docName}?`, body: `Your unsaved changes will be lost if you ${what}. Use File › Save first to keep them.`, ok: 'Discard changes', danger: true });
+  }
+  function info(title, html) { $('info-title').textContent = title; $('info-body').innerHTML = html; $('info').hidden = false; $('info-close').focus(); }
+  $('info-close').onclick = () => { $('info').hidden = true; };
+  $('info').onkeydown = (e) => { if (e.key === 'Escape') $('info').hidden = true; };
+
+  async function newLabel() {
+    if (!(await okToDiscard('start a new label'))) return;
+    canvas.discardActiveObject(); quiet(() => canvas.clear());
+    canvas.backgroundColor = '#ffffff';
+    applyLabel(label, { shiftObjects: false });
+    fileHandle = null; setDocName('Untitled'); resetHistory(); setDirty(false); showProps();
+    toast('New label on ' + (label.brand === 'Custom' ? 'a custom size' : `${label.brand} ${label.code}`));
+  }
+  async function clearLabel() {
+    if (!canvas.getObjects().length) return;
+    const ok = await ask({ title: 'Clear the label?', body: 'This removes everything from the label but keeps the label size. You can undo it with Edit › Undo.', ok: 'Clear label', danger: true });
+    if (!ok) return;
+    canvas.discardActiveObject(); quiet(() => canvas.getObjects().slice().forEach((o) => canvas.remove(o)));
+    canvas.requestRenderAll(); pushHistory(); showProps();
+  }
+
+  const openInput = $('open-input');
+  async function readLabelFile(file, handle) {
+    try {
+      const data = JSON.parse(await file.text());
+      loadDoc(data, () => { fileHandle = handle || null; setDocName(file.name); resetHistory(); setDirty(false); fitZoom(); toast('Opened ' + file.name); });
+    } catch (e) { toast(e.message.startsWith('This is') ? e.message : 'That file could not be read as a label.'); }
+  }
+  openInput.onchange = () => { const f = openInput.files[0]; openInput.value = ''; if (f) readLabelFile(f, null); };
+  async function openFile() {
+    if (!(await okToDiscard('open another label'))) return;
+    if (window.showOpenFilePicker && !inFrame) {
+      try {
+        const [h] = await window.showOpenFilePicker({ types: [{ description: 'LabelCraft label', accept: { 'application/json': ['.json', '.label'] } }] });
+        return readLabelFile(await h.getFile(), h);
+      } catch (e) { if (e.name === 'AbortError') return; }
+    }
+    openInput.click();
+  }
+  const baseName = () => docName.replace(/\.(label\.json|json|label)$/i, '') || 'label';
+  function download(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href: url, download: name });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  async function save(saveAs) {
+    const text = JSON.stringify(docData(), null, 1);
+    if (inFrame) { info('Save label', `<p>Saving files is not available in this viewer. Download LabelCraft and run <code>index.html</code> on your computer to save label files.</p>`); return; }
+    try {
+      if (fileHandle && !saveAs) {
+        const w = await fileHandle.createWritable(); await w.write(text); await w.close();
+        setDirty(false); toast('Saved ' + docName); return;
+      }
+      if (window.showSaveFilePicker) {
+        const h = await window.showSaveFilePicker({ suggestedName: baseName() + '.label.json', types: [{ description: 'LabelCraft label', accept: { 'application/json': ['.json'] } }] });
+        const w = await h.createWritable(); await w.write(text); await w.close();
+        fileHandle = h; setDocName(h.name); setDirty(false); toast('Saved ' + h.name); return;
+      }
+    } catch (e) { if (e.name === 'AbortError') return; }
+    const name = baseName() + '.label.json';
+    download(new Blob([text], { type: 'application/json' }), name);
+    setDocName(name); setDirty(false); toast('Downloaded ' + name);
+  }
+
+  // ---- Export ----
+  function renderImage(fmt, dpi, transparent) {
+    canvas.discardActiveObject();
+    const bg = canvas.backgroundColor;
+    if (transparent && fmt === 'png') canvas.backgroundColor = null;
+    const url = canvas.toDataURL({ format: fmt === 'jpg' ? 'jpeg' : 'png', quality: 0.95, multiplier: (dpi / DPI) / zoom, enableRetinaScaling: false });
+    canvas.backgroundColor = bg; canvas.requestRenderAll(); showProps();
+    return url;
+  }
+  function renderSvg() {
+    canvas.discardActiveObject();
+    const vpt = canvas.viewportTransform.slice(), bg = canvas.backgroundColor;
+    canvas.viewportTransform = [1, 0, 0, 1, 0, 0];
+    canvas.backgroundColor = null;
+    const { w, h } = labelPx();
+    let svg = canvas.toSVG({ width: `${label.w}mm`, height: `${label.h}mm`, viewBox: { x: 0, y: 0, width: w, height: h } });
+    canvas.viewportTransform = vpt; canvas.backgroundColor = bg; canvas.requestRenderAll(); showProps();
+    // White label background covering the whole label, drawn first.
+    const shape = label.shape === 'round'
+      ? `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2}" ry="${h / 2}" fill="#ffffff"/>`
+      : `<rect x="0" y="0" width="${w}" height="${h}" fill="#ffffff"/>`;
+    svg = svg.replace(/(<svg[^>]*>)/, `$1
+${shape}`);
+    return svg;
+  }
+  function openExport() {
+    $('ex-name').value = baseName();
+    updateExportUi();
+    $('export').hidden = false; $('ex-format').focus();
+  }
+  function updateExportUi() {
+    const f = $('ex-format').value, dpi = +$('ex-dpi').value;
+    $('ex-dpi-f').hidden = f === 'svg';
+    $('ex-transp-f').hidden = f !== 'png';
+    $('ex-size').textContent = f === 'svg'
+      ? `Vector file sized ${fmtSize(label.w, label.h)}`
+      : `${Math.round(label.w / 25.4 * dpi)} × ${Math.round(label.h / 25.4 * dpi)} pixels · prints at ${fmtSize(label.w, label.h)}`;
+  }
+  ['ex-format', 'ex-dpi'].forEach((id) => { $(id).onchange = updateExportUi; });
+  $('ex-cancel').onclick = () => { $('export').hidden = true; };
+  $('export').onkeydown = (e) => { if (e.key === 'Escape') $('export').hidden = true; };
+  $('ex-go').onclick = async () => {
+    const f = $('ex-format').value, dpi = +$('ex-dpi').value, name = ($('ex-name').value.trim() || baseName()) + '.' + f;
+    $('export').hidden = true;
+    if (f === 'svg') {
+      const svg = renderSvg();
+      if (inFrame) return info('Export SVG', `<p>Downloads are blocked in this viewer. Here is your label; right-click it to save, or run LabelCraft from <code>index.html</code> to download files.</p><img class="export-preview" alt="Exported label" src="data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}">`);
+      download(new Blob([svg], { type: 'image/svg+xml' }), name);
+    } else {
+      const url = renderImage(f, dpi, $('ex-transp').checked);
+      if (inFrame) return info(`Export ${f.toUpperCase()}`, `<p>Downloads are blocked in this viewer. Right-click the image and choose “Save image as…”, or run LabelCraft from <code>index.html</code> to download files.</p><img class="export-preview" alt="Exported label" src="${url}">`);
+      download(await (await fetch(url)).blob(), name);
+    }
+    toast('Exported ' + name);
+  };
+
+  // ---- Print (sends the label at its real size to the system print dialog) ----
+  function printLabel() {
+    if (inFrame) { info('Print', '<p>Printing is not available in this viewer. Run LabelCraft from <code>index.html</code> on your computer, or export a PNG and print that.</p>'); return; }
+    const url = renderImage('png', 300, false);
+    const area = $('print-area');
+    area.innerHTML = `<style>@page { size: ${label.w}mm ${label.h}mm; margin: 0; }</style><img alt="" src="${url}" style="width:${label.w}mm;height:${label.h}mm">`;
+    area.querySelector('img').onload = () => { window.print(); };
+  }
+
+  // =====================================================================
+  // Help
+  // =====================================================================
+  const shortcutsHtml = `<table>
+    <tr><td>Open a label</td><td>Ctrl+O</td></tr><tr><td>Save</td><td>Ctrl+S</td></tr><tr><td>Save as</td><td>Ctrl+Shift+S</td></tr>
+    <tr><td>Export image</td><td>Ctrl+E</td></tr><tr><td>Print</td><td>Ctrl+P</td></tr>
+    <tr><td>Undo / Redo</td><td>Ctrl+Z / Ctrl+Y</td></tr>
+    <tr><td>Cut / Copy / Paste</td><td>Ctrl+X / C / V</td></tr><tr><td>Duplicate</td><td>Ctrl+D</td></tr>
+    <tr><td>Select all</td><td>Ctrl+A</td></tr><tr><td>Delete selection</td><td>Delete</td></tr>
+    <tr><td>Rotate 90° right / left</td><td>R / Shift+R</td></tr>
+    <tr><td>Nudge 0.5 mm / 5 mm</td><td>Arrows / Shift+Arrows</td></tr>
+    <tr><td>Zoom in / out / fit</td><td>+ / − / 0</td></tr>
+  </table><p style="margin-top:10px;color:var(--muted)">On a Mac, use Cmd instead of Ctrl. Single-key shortcuts work when you are not typing.</p>`;
+  const startHtml = `
+    <h3>1. Pick your label</h3><p>Choose your printer's label stock on the left. Search by code (for example 30252 or DK-1201) or by size. For tape printers, set the tape length. Anything else: use <b>Custom size</b>.</p>
+    <h3>2. Design it</h3><ol>
+      <li>Add text, barcodes, QR codes, boxes, lines and images from the toolbar.</li>
+      <li>Drag to move, pull the corner handles to resize, and use the round handle or the rotate buttons to turn things 90° or 180°.</li>
+      <li>Change the details on the right: font and size for text, type and data for barcodes, exact position and size in ${unit}.</li>
+      <li>The dashed red line marks the safe printing area. Keep important content inside it.</li></ol>
+    <h3>3. Print or export</h3><p><b>File › Print</b> sends the label at its real size to your label printer. In the print window, choose your printer and its label size, and set scale to 100% (Actual size). <b>Export</b> saves PNG, JPG or SVG at your printer's resolution.</p>`;
+  const aboutHtml = `<p><b>LabelCraft</b> · version 0.1</p><p>A label designer for Dymo, Brother, Zebra and sheet labels, running in your browser.</p>
+    <p>Built with <a href="https://fabricjs.com" target="_blank" rel="noopener">Fabric.js</a> 5.3 (MIT), <a href="https://github.com/lindell/JsBarcode" target="_blank" rel="noopener">JsBarcode</a> 3.11 (MIT) and <a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener">qrcode-generator</a> 1.4 (MIT).</p>
+    <p style="color:var(--muted)">Label names and codes are used only to identify compatible sizes. Check measurements against your own stock before printing large runs.</p>`;
+
+  // =====================================================================
+  // Menu bar
+  // =====================================================================
+  const sel = () => !!active();
+  const THEME_KEY = 'labelcraft-theme';
+  const getTheme = () => document.documentElement.dataset.theme || 'system';
+  function setTheme(t) { if (t === 'system') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t; try { localStorage.setItem(THEME_KEY, t); } catch (e) {} if (typeof paintThemeButton === 'function') paintThemeButton(); }
+  try { const t = localStorage.getItem(THEME_KEY); if (t) setTheme(t); } catch (e) {}
+
+  // Light / dark toggle in the top bar
+  const THEME_ICONS = { sun: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.7 4.7l1.6 1.6M17.7 17.7l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.7 19.3l1.6-1.6M17.7 6.3l1.6-1.6"/></svg>', moon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></svg>' };
+  const themeIsDark = () => (document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches);
+  function paintThemeButton() {
+    const b = document.getElementById('theme-btn'); if (!b) return;
+    const dark = themeIsDark();
+    b.innerHTML = dark ? THEME_ICONS.sun : THEME_ICONS.moon;
+    b.title = dark ? 'Switch to light mode' : 'Switch to dark mode';
+    b.setAttribute('aria-label', b.title);
+  }
+  document.getElementById('theme-btn').addEventListener('click', () => { setTheme(themeIsDark() ? 'light' : 'dark'); paintThemeButton(); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintThemeButton);
+  paintThemeButton();
+  function setUnit(u) { unit = u; try { localStorage.setItem('labelcraft-unit', u); } catch (e) {} renderStockList(); updateTapeUi(); refreshStatus(); showProps(); }
+  try { const u = localStorage.getItem('labelcraft-unit'); if (u) unit = u; } catch (e) {}
+
+  const menus = [
+    ['File', [
+      { label: 'New label', run: newLabel },
+      { label: 'Open…', key: 'Ctrl+O', run: openFile },
+      '-',
+      { label: 'Save', key: 'Ctrl+S', run: () => save(false) },
+      { label: 'Save as…', key: 'Ctrl+Shift+S', run: () => save(true) },
+      '-',
+      { label: 'Export image…', key: 'Ctrl+E', run: openExport },
+      { label: 'Print…', key: 'Ctrl+P', run: printLabel },
+      '-',
+      { label: 'Clear label', run: clearLabel },
+    ]],
+    ['Edit', [
+      { label: 'Undo', key: 'Ctrl+Z', run: undo, disabled: () => hIndex <= 0 },
+      { label: 'Redo', key: 'Ctrl+Y', run: redo, disabled: () => hIndex >= history.length - 1 },
+      '-',
+      { label: 'Cut', key: 'Ctrl+X', run: cutSel, disabled: () => !sel() },
+      { label: 'Copy', key: 'Ctrl+C', run: () => copySel(), disabled: () => !sel() },
+      { label: 'Paste', key: 'Ctrl+V', run: paste, disabled: () => !clipboard },
+      { label: 'Duplicate', key: 'Ctrl+D', run: duplicate, disabled: () => !sel() },
+      { label: 'Delete', key: 'Del', run: removeSelected, disabled: () => !sel() },
+      { label: 'Select all', key: 'Ctrl+A', run: selectAll },
+      '-',
+      { heading: 'Rotate selection' },
+      { label: 'Rotate 90° right', key: 'R', run: () => rotateBy(90), disabled: () => !sel() },
+      { label: 'Rotate 90° left', key: 'Shift+R', run: () => rotateBy(-90), disabled: () => !sel() },
+      { label: 'Rotate 180°', run: () => rotateBy(180), disabled: () => !sel() },
+      '-',
+      { label: 'Bring to front', run: () => order(true), disabled: () => !sel() },
+      { label: 'Send to back', run: () => order(false), disabled: () => !sel() },
+    ]],
+    ['Insert', [
+      { label: 'Text', run: addText },
+      { label: 'Barcode', run: addBarcode },
+      { label: 'QR code', run: addQR },
+      '-',
+      { label: 'Box', run: addRect },
+      { label: 'Ellipse', run: addEllipse },
+      { label: 'Line', run: addLine },
+      { label: 'Image or logo…', run: () => imageInput.click() },
+    ]],
+    ['View', [
+      { label: 'Zoom in', key: '+', run: () => { autoFit = false; setZoom(zoom * 1.25); } },
+      { label: 'Zoom out', key: '−', run: () => { autoFit = false; setZoom(zoom / 1.25); } },
+      { label: 'Fit to window', key: '0', run: () => { autoFit = true; fitZoom(); } },
+      { label: 'Actual size (100%)', run: () => { autoFit = false; setZoom(96 / DPI); } },
+      '-',
+      { label: 'Safe print area', run: () => { showSafe = !showSafe; setZoom(zoom); }, checked: () => showSafe },
+      { label: 'Snap to centre', run: () => { snapping = !snapping; }, checked: () => snapping },
+      { label: 'Turn label 90°', run: turnLabel },
+      '-',
+      { heading: 'Units' },
+      { label: 'Millimetres', run: () => setUnit('mm'), checked: () => unit === 'mm' },
+      { label: 'Inches', run: () => setUnit('in'), checked: () => unit === 'in' },
+      '-',
+      { heading: 'Interface theme' },
+      { label: 'Match system', run: () => setTheme('system'), checked: () => getTheme() === 'system' },
+      { label: 'Light', run: () => setTheme('light'), checked: () => getTheme() === 'light' },
+      { label: 'Dark', run: () => setTheme('dark'), checked: () => getTheme() === 'dark' },
+    ]],
+    ['Help', [
+      { label: 'Getting started', run: () => info('Getting started', startHtml) },
+      { label: 'Keyboard shortcuts', run: () => info('Keyboard shortcuts', shortcutsHtml) },
+      '-',
+      { label: 'About LabelCraft', run: () => info('About LabelCraft', aboutHtml) },
+    ]],
+  ];
+
+  const menubar = $('menubar'); let openMenu = null; const menuWraps = [];
+  function closeMenus() { if (!openMenu) return; openMenu.btn.setAttribute('aria-expanded', 'false'); openMenu.list.remove(); openMenu = null; }
+  function buildList(items) {
+    const list = document.createElement('div'); list.className = 'menu-list'; list.setAttribute('role', 'menu');
+    items.forEach((it) => {
+      if (it === '-') { const s = document.createElement('div'); s.className = 'menu-sep'; list.append(s); return; }
+      if (it.heading) { const h = document.createElement('div'); h.className = 'menu-heading'; h.textContent = it.heading; list.append(h); return; }
+      const b = document.createElement('button'), isCheck = !!it.checked, on = isCheck && it.checked();
+      b.className = 'menu-item'; b.setAttribute('role', isCheck ? 'menuitemcheckbox' : 'menuitem');
+      if (isCheck) b.setAttribute('aria-checked', on);
+      b.disabled = !!(it.disabled && it.disabled());
+      b.innerHTML = `<span class="menu-check">${on ? '✓' : ''}</span><span></span><span class="menu-key">${it.key || ''}</span>`;
+      b.children[1].textContent = it.label;
+      b.onclick = () => { closeMenus(); it.run(); };
+      list.append(b);
+    });
+    list.addEventListener('keydown', (e) => {
+      const btns = [...list.querySelectorAll('.menu-item:not(:disabled)')], i = btns.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); btns[(i + 1) % btns.length].focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); btns[(i - 1 + btns.length) % btns.length].focus(); }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); stepMenu(e.key === 'ArrowRight' ? 1 : -1); }
+    });
+    return list;
+  }
+  function showMenu(m, focusFirst) {
+    closeMenus();
+    const list = buildList(m.items); m.wrap.append(list);
+    m.btn.setAttribute('aria-expanded', 'true'); openMenu = { ...m, list };
+    const r = list.getBoundingClientRect();
+    if (r.right > window.innerWidth - 8) { list.style.left = 'auto'; list.style.right = '0'; }
+    if (focusFirst) list.querySelector('.menu-item:not(:disabled)')?.focus();
+  }
+  function stepMenu(dir) { const i = menuWraps.findIndex((m) => m.btn === openMenu?.btn); const n = menuWraps[(i + dir + menuWraps.length) % menuWraps.length]; showMenu(n, true); }
+  menus.forEach(([name, items]) => {
+    const wrap = document.createElement('div'); wrap.className = 'menu';
+    const btn = document.createElement('button'); btn.className = 'menu-btn'; btn.textContent = name;
+    btn.setAttribute('aria-haspopup', 'menu'); btn.setAttribute('aria-expanded', 'false');
+    const m = { wrap, btn, items };
+    btn.onclick = () => (openMenu && openMenu.btn === btn) ? closeMenus() : showMenu(m, false);
+    btn.onmouseenter = () => { if (openMenu && openMenu.btn !== btn) showMenu(m, false); };
+    btn.onkeydown = (e) => { if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showMenu(m, true); } };
+    wrap.append(btn); menubar.append(wrap); menuWraps.push(m);
+  });
+  document.addEventListener('mousedown', (e) => { if (openMenu && !openMenu.wrap.contains(e.target)) closeMenus(); });
+  window.addEventListener('blur', closeMenus);
+
+  // =====================================================================
+  // Toolbar, drawers, keyboard
+  // =====================================================================
+  $('add-text').onclick = addText; $('add-barcode').onclick = addBarcode; $('add-qr').onclick = addQR;
+  $('add-rect').onclick = addRect; $('add-ellipse').onclick = addEllipse; $('add-line').onclick = addLine;
+  $('add-image').onclick = () => imageInput.click();
+  $('rot-cw').onclick = () => rotateBy(90); $('rot-ccw').onclick = () => rotateBy(-90); $('rot-180').onclick = () => rotateBy(180);
+  $('zoom-in').onclick = () => { autoFit = false; setZoom(zoom * 1.25); };
+  $('zoom-out').onclick = () => { autoFit = false; setZoom(zoom / 1.25); };
+  $('zoom-fit').onclick = () => { autoFit = true; fitZoom(); };
+  $('export-btn').onclick = openExport;
+  const left = $('left'), right = $('right');
+  $('toggle-left').onclick = () => { left.classList.toggle('open'); right.classList.remove('open'); };
+  $('toggle-right').onclick = () => { right.classList.toggle('open'); left.classList.remove('open'); };
+
+  document.addEventListener('keydown', (e) => {
+    if (openMenu && e.key === 'Escape') { const b = openMenu.btn; closeMenus(); b.focus(); return; }
+    const dialogOpen = !$('ask').hidden || !$('export').hidden || !$('info').hidden;
+    if (dialogOpen) return;
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || active()?.isEditing;
+    const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+    if (mod && k === 's') { e.preventDefault(); save(e.shiftKey); return; }
+    if (mod && k === 'o') { e.preventDefault(); openFile(); return; }
+    if (mod && k === 'e') { e.preventDefault(); openExport(); return; }
+    if (mod && k === 'p') { e.preventDefault(); printLabel(); return; }
+    if (typing) return;
+    if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+    if (mod && k === 'y') { e.preventDefault(); redo(); return; }
+    if (mod && k === 'c') { e.preventDefault(); copySel(); return; }
+    if (mod && k === 'x') { e.preventDefault(); cutSel(); return; }
+    if (mod && k === 'v') { e.preventDefault(); paste(); return; }
+    if (mod && k === 'd') { e.preventDefault(); duplicate(); return; }
+    if (mod && k === 'a') { e.preventDefault(); selectAll(); return; }
+    if (mod) return;
+    if (k === 'delete' || k === 'backspace') { e.preventDefault(); removeSelected(); return; }
+    if (k === 'r') { rotateBy(e.shiftKey ? -90 : 90); return; }
+    const step = e.shiftKey ? 5 : 0.5;
+    const arrows = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] };
+    if (arrows[k] && active()) { e.preventDefault(); nudge(...arrows[k]); return; }
+    if (k === '+' || k === '=') { autoFit = false; setZoom(zoom * 1.25); }
+    if (k === '-' || k === '_') { autoFit = false; setZoom(zoom / 1.25); }
+    if (k === '0') { autoFit = true; fitZoom(); }
+    if (k === 'escape') { canvas.discardActiveObject(); canvas.requestRenderAll(); showProps(); }
+  });
+  window.addEventListener('beforeunload', (e) => { if (dirty && !inFrame) { e.preventDefault(); e.returnValue = ''; } });
+
+  const toastEl = $('toast'); let toastT;
+  function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { toastEl.hidden = true; }, 3000); }
+
+  // =====================================================================
+  // Start: restore the autosaved label, or open a sample on Dymo 30334.
+  // =====================================================================
+  function sample() {
+    const s = ALL_STOCK.find((x) => x.code === '30334');
+    applyLabel(s, { shiftObjects: false });
+    const { w, h } = labelPx();
+    quiet(() => {
+      canvas.add(new fabric.Rect({ kind: 'rect', left: px(1.5), top: px(1.5), width: px(7), height: h - px(3), rx: px(1), ry: px(1), fill: '#000000', strokeWidth: 0 }));
+      canvas.add(makeText('SHELF 3', { left: px(5), top: h / 2, angle: -90, fontFamily: 'Barlow Condensed', fontWeight: 'bold', fontSize: ptToPx(11), fill: '#ffffff', charSpacing: 120 }));
+      canvas.add(makeText('BIN A-14', { originX: 'left', left: px(11), top: px(6), fontFamily: 'Barlow Condensed', fontWeight: 'bold', fontSize: ptToPx(20) }));
+      canvas.add(makeText('M6 hex bolts · 40 mm · zinc', { originX: 'left', left: px(11.2), top: px(12), fontSize: ptToPx(7.5) }));
+      const g = buildBarcode({ type: 'CODE128', value: 'BIN-A14-M6X40', showText: true, wmm: 42, hmm: 12.5 });
+      g.set({ left: px(11) + px(21), top: px(23.5) });
+      canvas.add(g);
+    });
+    ensureFont('Barlow Condensed').then(refreshText);
+  }
+
+  let restored = false;
+  try {
+    const saved = localStorage.getItem(AUTOSAVE);
+    if (saved) { loadDoc(JSON.parse(saved), () => { resetHistory(); fitZoom(); }); restored = true; }
+  } catch (e) { restored = false; }
+  if (!restored) { sample(); resetHistory(); }
+  renderDoc(); fitZoom(); showProps();
+})();
+</script>
+</body>
+</html>
