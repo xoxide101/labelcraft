@@ -123,6 +123,7 @@ Chrome or Edge (recent versions). Firefox and Safari work too, but download file
 
 ## Objects and text (the same in every Craft app)
 
+- **Every slider has a box beside it** to type the exact value (Enter or Tab to apply).
 - **Shapes:** box, rounded box, circle, triangle, diamond, pentagon, hexagon, octagon, star, arrow and line, with **corners from sharp to round**, dashed borders and **words inside**. **3-D** in three colours (face, side and edge) and borders of **one line or three** (outer, middle and inner, each in its own colour, with an optional gap).
 - **Text box:** words that wrap inside a box with a border, background, corners, padding and top or middle alignment.
 - **Curved text** around the centre of the label, with a **rotation angle**, distance from the centre and spread.
