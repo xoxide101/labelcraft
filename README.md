@@ -41,7 +41,10 @@ Your label also autosaves in the browser.
 - **Turn label 90°** turns the whole label sideways, content and all.
 
 ### Design
-- **Text**: any font (system fonts plus bundled Barlow Condensed, Oswald, Roboto Mono, Archivo Black), size in points, bold, italic, underline, left / centre / right.
+- **Text, formatted like a word processor** (Text tab, Format menu or the panel on the right): 29 fonts (Barlow Condensed, Oswald, Roboto Mono and Archivo Black bundled, plus common Windows and Mac fonts), size with bigger / smaller, **bold, italic, underline, strikethrough, overline, superscript, subscript**, text colour, **highlight**, text **outline**, change case (UPPERCASE, lowercase, Title Case, Sentence case), clear formatting, align left / centre / right / **justify**, **bullets and numbering**, letter spacing and line height.
+- **Format just some words**: double-click the text on the label, select the words, then pick the formatting (Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+] and Ctrl+[ work too).
+- **Wrap text in a box** of a set width, **Fit to label** width, and insert today's date, the time or symbols (© ® ™ ° ± € ✓ ★ ⚠ …).
+- **Tables**: type into a grid in the side panel (double-click the table to start), add or delete rows and columns, heading row, font, size, alignment, grid lines, padding; resize by dragging and text shrinks to fit each cell.
 - **Shapes**: box, ellipse, line. **Images and logos** from your computer.
 - **Rotate** anything **90° left, 90° right or 180°**, or type any angle.
 - **Align** to the label edges and centre; **snap to centre**; bring to front / send to back.
@@ -62,6 +65,10 @@ Barcodes are drawn as exact vector bars at the size you set, so they never get b
 | MSI | Shelf labels |
 | Pharmacode | Pharmaceutical packaging |
 | QR code | Links, text, Wi-Fi details… (full Unicode) |
+| PDF417 | Lots of data in a small space: ID cards, shipping, boarding passes (set the columns to change its shape) |
+| Micro PDF417 | Small items |
+| Data Matrix | Electronics, healthcare, small parts |
+| Aztec | Tickets and transport |
 
 ### Save, print and export
 - **Save / Open** label files (`.json`), so you can reuse and edit labels later.

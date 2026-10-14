@@ -168,6 +168,19 @@ input[type="color"].input { padding: 2px; height: 30px; }
 .label-frame.bw .lower-canvas { filter: grayscale(1) contrast(1.2); }
 .cpick { display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: 4px; }
 .cpick select { min-width: 0; }
+.tfmt .btn { padding: 0; min-width: 0; font-size: 13px; }
+.tfmt .btn sup, .tfmt .btn sub { font-size: 9px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; }
+.tb-grid { overflow: auto; max-height: 220px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
+.tb-grid table { border-collapse: collapse; width: 100%; }
+.tb-grid td { padding: 0; border: 1px solid var(--line); }
+.tb-grid input { width: 100%; min-width: 46px; box-sizing: border-box; border: 0; background: transparent; padding: 5px 6px; font: inherit; font-size: 12px; color: inherit; }
+.tb-grid tr:first-child input.head { font-weight: 600; }
+.tb-grid input:focus { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--panel); }
+.crb .rb-font { display: grid; gap: 4px; padding: 2px 4px; }
+.crb .rb-font select, .crb .rb-font input { height: 25px; font: inherit; font-size: 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); color: inherit; padding: 0 6px; box-sizing: border-box; }
+.crb .rb-font select { width: 150px; }
+.crb .rb-font input { width: 64px; }
 .cpick input[type="color"] { width: 34px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
 .row > .field { min-width: 0; }
 .cpick input[type="color"] { padding: 2px; height: 30px; }
@@ -356,28 +369,92 @@ input[type="color"].input { padding: 2px; height: 30px; }
         <div class="sec" id="p-text" hidden>
           <h3>Text</h3>
           <textarea class="input" id="t-content" rows="3" aria-label="Text"></textarea>
+          <p class="hint" id="t-scope"></p>
+          <h3>Font</h3>
           <label class="field"><span>Font</span><select class="input" id="t-font"></select></label>
-          <div class="row">
-            <label class="field"><span>Size (pt)</span><input class="input" type="number" step="0.5" min="2" id="t-size"></label>
-            <label class="field"><span>Colour</span><input class="input" type="color" id="t-color"></label>
+          <div class="row2">
+            <label class="field"><span>Size (pt)</span><input class="input" type="number" step="0.5" min="2" id="t-size" list="t-sizes"></label>
+            <div class="seg" role="group" aria-label="Text size">
+              <button class="btn" id="t-grow" title="Bigger text (Ctrl+])">A<sup>+</sup></button>
+              <button class="btn" id="t-shrink" title="Smaller text (Ctrl+[)">A<sup>−</sup></button>
+            </div>
+          </div>
+          <datalist id="t-sizes"><option value="6"><option value="7"><option value="8"><option value="9"><option value="10"><option value="11"><option value="12"><option value="14"><option value="16"><option value="18"><option value="20"><option value="24"><option value="28"><option value="32"><option value="36"><option value="48"><option value="72"></datalist>
+          <div class="seg tfmt" role="group" aria-label="Font style">
+            <button class="btn" id="t-bold" aria-pressed="false" title="Bold (Ctrl+B)"><b>B</b></button>
+            <button class="btn" id="t-italic" aria-pressed="false" title="Italic (Ctrl+I)"><i style="font-family:Georgia,serif">I</i></button>
+            <button class="btn" id="t-underline" aria-pressed="false" title="Underline (Ctrl+U)"><u>U</u></button>
+            <button class="btn" id="t-strike" aria-pressed="false" title="Strikethrough"><s>S</s></button>
+            <button class="btn" id="t-over" aria-pressed="false" title="Overline"><span style="text-decoration:overline">O</span></button>
+            <button class="btn" id="t-sup" aria-pressed="false" title="Superscript">x<sup>2</sup></button>
+            <button class="btn" id="t-sub" aria-pressed="false" title="Subscript">x<sub>2</sub></button>
           </div>
           <div class="row">
-            <div class="seg" role="group" aria-label="Style">
-              <button class="btn" id="t-bold" aria-pressed="false" title="Bold"><b>B</b></button>
-              <button class="btn" id="t-italic" aria-pressed="false" title="Italic"><i style="font-family:Georgia,serif">I</i></button>
-              <button class="btn" id="t-underline" aria-pressed="false" title="Underline"><u>U</u></button>
-            </div>
-            <div class="seg" role="group" aria-label="Text alignment">
-              <button class="btn" data-talign="left" title="Align text left"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
-              <button class="btn" data-talign="center" title="Centre text"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
-              <button class="btn" data-talign="right" title="Align text right"><svg viewBox="0 0 24 24"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
-            </div>
+            <label class="field"><span>Text colour</span><input class="input" type="color" id="t-color"></label>
+            <label class="field"><span>Change case</span><select class="input" id="t-case"><option value="">Choose…</option><option value="upper">UPPERCASE</option><option value="lower">lowercase</option><option value="title">Title Case</option><option value="sentence">Sentence case</option></select></label>
+          </div>
+          <div class="field"><span>Highlight</span><div class="cpick"><select class="input" id="t-hl" aria-label="Highlight"></select><input type="color" id="t-hl-c" aria-label="Highlight colour" title="Pick any colour"></div></div>
+          <div class="row">
+            <label class="field"><span>Outline colour</span><input class="input" type="color" id="t-stroke"></label>
+            <label class="field"><span>Outline width (mm)</span><input class="input" type="number" step="0.05" min="0" id="t-sw"></label>
+          </div>
+          <button class="btn outline" id="t-clear" title="Remove bold, colours and other formatting (keeps the font and size)">Clear formatting</button>
+          <h3>Paragraph</h3>
+          <div class="seg" role="group" aria-label="Text alignment">
+            <button class="btn" data-talign="left" title="Align text left"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
+            <button class="btn" data-talign="center" title="Centre text"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
+            <button class="btn" data-talign="right" title="Align text right"><svg viewBox="0 0 24 24"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
+            <button class="btn" data-talign="justify" title="Justify (fills each wrapped line)"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h10"/></svg></button>
+            <button class="btn" id="t-bullets" aria-pressed="false" title="Bullets"><svg viewBox="0 0 24 24"><circle cx="5" cy="7" r="1.3"/><circle cx="5" cy="12" r="1.3"/><circle cx="5" cy="17" r="1.3"/><path d="M9 7h11M9 12h11M9 17h11"/></svg></button>
+            <button class="btn" id="t-numbers" aria-pressed="false" title="Numbering"><svg viewBox="0 0 24 24"><path d="M4 5h1.5v4M4 9h3M4 14.5c0-1 2.8-1 2.8.4 0 1-2.8 1.6-2.8 3.1h3M10 7h10M10 12h10M10 17h10"/></svg></button>
           </div>
           <div class="row">
             <label class="field"><span>Letter spacing</span><input class="input" type="number" step="10" id="t-spacing"></label>
             <label class="field"><span>Line height</span><input class="input" type="number" step="0.05" min="0.6" id="t-lineh"></label>
           </div>
+          <label class="check"><input type="checkbox" id="t-wrap"> Wrap text in a box (drag the sides to set its width)</label>
+          <div class="row">
+            <button class="btn outline" id="t-fit" title="Make the text exactly as wide as the label">Fit to label</button>
+            <select class="input" id="t-insert" aria-label="Insert date, time or symbol"></select>
+          </div>
           <label class="check"><input type="checkbox" id="t-invert"> White text on black</label>
+        </div>
+
+        <div class="sec" id="p-table" hidden>
+          <h3>Table</h3>
+          <div class="tb-grid" id="tb-grid"></div>
+          <div class="row">
+            <button class="btn outline" id="tb-addrow">Add row</button>
+            <button class="btn outline" id="tb-addcol">Add column</button>
+          </div>
+          <div class="row">
+            <button class="btn outline" id="tb-delrow" title="Delete the row of the cell you clicked last">Delete row</button>
+            <button class="btn outline" id="tb-delcol" title="Delete the column of the cell you clicked last">Delete column</button>
+          </div>
+          <label class="field"><span>Font</span><select class="input" id="tb-font"></select></label>
+          <div class="row">
+            <label class="field"><span>Size (pt)</span><input class="input" type="number" step="0.5" min="2" id="tb-size" list="t-sizes"></label>
+            <label class="field"><span>Text colour</span><input class="input" type="color" id="tb-color"></label>
+          </div>
+          <div class="seg" role="group" aria-label="Cell text alignment">
+            <button class="btn" data-tbalign="left" title="Align left"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 10h10M4 14h16M4 18h10"/></svg></button>
+            <button class="btn" data-tbalign="center" title="Centre"><svg viewBox="0 0 24 24"><path d="M4 6h16M7 10h10M4 14h16M7 18h10"/></svg></button>
+            <button class="btn" data-tbalign="right" title="Align right"><svg viewBox="0 0 24 24"><path d="M4 6h16M10 10h10M4 14h16M10 18h10"/></svg></button>
+          </div>
+          <label class="check"><input type="checkbox" id="tb-header"> First row is a heading (bold and shaded)</label>
+          <div class="row">
+            <label class="field"><span>Heading shade</span><input class="input" type="color" id="tb-head"></label>
+            <label class="field"><span>Grid line colour</span><input class="input" type="color" id="tb-line"></label>
+          </div>
+          <div class="row">
+            <label class="field"><span>Grid line width (mm)</span><input class="input" type="number" step="0.05" min="0" id="tb-lw"></label>
+            <label class="field"><span>Cell padding (mm)</span><input class="input" type="number" step="0.1" min="0" id="tb-pad"></label>
+          </div>
+          <div class="row">
+            <button class="btn outline" id="tb-evencols">Even columns</button>
+            <button class="btn outline" id="tb-evenrows">Even rows</button>
+          </div>
+          <p class="hint">Type in the cells above. Drag the corner handles on the label to resize the table; rows and columns stretch with it, and text shrinks to fit its cell.</p>
         </div>
 
         <div class="sec" id="p-barcode" hidden>
@@ -390,9 +467,17 @@ input[type="color"].input { padding: 2px; height: 30px; }
         </div>
 
         <div class="sec" id="p-qr" hidden>
-          <h3>QR code</h3>
+          <h3 id="q-title">QR code</h3>
+          <label class="field"><span>Type</span><select class="input" id="q-type">
+            <option value="QR">QR code – links, text, Wi-Fi</option>
+            <option value="PDF417">PDF417 – ID cards, boarding passes, shipping (lots of data)</option>
+            <option value="MICROPDF417">Micro PDF417 – small items</option>
+            <option value="DATAMATRIX">Data Matrix – electronics, healthcare, small parts</option>
+            <option value="AZTEC">Aztec – tickets and transport</option>
+          </select></label>
           <label class="field"><span>Data or web address</span><textarea class="input" id="q-value" rows="3" spellcheck="false"></textarea></label>
-          <label class="field"><span>Error correction</span>
+          <label class="field" id="q-cols-f"><span>Columns (0 = automatic; more columns make it wider and shorter)</span><input class="input" type="number" id="q-cols" min="0" max="30" step="1"></label>
+          <label class="field" id="q-ecc-f"><span>Error correction</span>
             <select class="input" id="q-ecc"><option value="L">Low (7%) – smallest code</option><option value="M">Medium (15%)</option><option value="Q">Quartile (25%)</option><option value="H">High (30%) – survives damage</option></select>
           </label>
           <p class="error" id="q-error" hidden></p>
@@ -519,6 +604,7 @@ input[type="color"].input { padding: 2px; height: 30px; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/4.10.2/bwip-js-min.js"></script>
 <script>
 /* Craft title bar and ribbon, shared by the Craft apps (the same file in every app).
    CraftTitlebar: the Office-style strip at the very top. Logo (opens every menu side by side), quick buttons
@@ -1249,8 +1335,11 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   STOCK.forEach(([brand, items]) => items.forEach((s) => { s.brand = brand; s.shape = s.shape || 'rect'; s.id = brand + '|' + s.code + '|' + s.name; }));
   const ALL_STOCK = STOCK.flatMap(([, items]) => items);
 
-  const FONTS = ['Arial', 'Helvetica', 'Verdana', 'Tahoma', 'Trebuchet MS', 'Georgia', 'Times New Roman', 'Courier New', 'Impact',
-    'Barlow Condensed', 'Oswald', 'Roboto Mono', 'Archivo Black'];
+  // Bundled fonts (always available) first, then fonts found on most Windows and Mac computers.
+  const FONTS = ['Barlow Condensed', 'Oswald', 'Roboto Mono', 'Archivo Black',
+    'Arial', 'Arial Black', 'Arial Narrow', 'Calibri', 'Cambria', 'Candara', 'Century Gothic', 'Comic Sans MS', 'Consolas', 'Constantia',
+    'Corbel', 'Courier New', 'Franklin Gothic Medium', 'Garamond', 'Georgia', 'Helvetica', 'Impact', 'Lucida Console', 'Lucida Sans Unicode',
+    'Palatino Linotype', 'Segoe UI', 'Tahoma', 'Times New Roman', 'Trebuchet MS', 'Verdana'];
   const BARCODES = [
     ['CODE128', 'Code 128 – letters and numbers (most common)', 'LC-000123'],
     ['CODE39', 'Code 39 – capitals, numbers, - . $ / + %', 'ABC-123'],
@@ -1267,7 +1356,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // =====================================================================
   // Canvas
   // =====================================================================
-  const PROPS = ['kind', 'bc', 'invert'];
+  const PROPS = ['kind', 'bc', 'invert', 'tb'];
   fabric.Object.prototype.set({
     transparentCorners: false, cornerColor: '#ffffff', cornerStrokeColor: '#c8322b', borderColor: '#c8322b',
     cornerStyle: 'circle', cornerSize: 10, borderScaleFactor: 1.5, padding: 0,
@@ -1373,8 +1462,76 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     return { modules, bars };
   }
 
+  // 2D codes. QR uses qrcode-generator; the others come from bwip-js (Barcode Writer in Pure PostScript).
+  const TWO_D = { QR: 'QR code', PDF417: 'PDF417', MICROPDF417: 'Micro PDF417', DATAMATRIX: 'Data Matrix', AZTEC: 'Aztec code' };
+  const BWIP = { PDF417: 'pdf417', MICROPDF417: 'micropdf417', DATAMATRIX: 'datamatrix', AZTEC: 'azteccode' };
+  const is2D = (t) => t in TWO_D;
+  function buildBwip(bc) {
+    if (!window.bwipjs) throw new Error('The 2D barcode library did not load.');
+    let svg;
+    const opts = { bcid: BWIP[bc.type], text: bc.value || ' ', scale: 1 };
+    if (bc.type === 'PDF417' && bc.cols) opts.columns = bc.cols;
+    try { svg = window.bwipjs.toSVG(opts); }
+    catch (e) { throw new Error(String(e.message || e).replace(/^bwipp\.\w+#\d+:\s*/, '').replace(/^\w/, (c) => c.toUpperCase())); }
+    const vb = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/), vw = +vb[1], vh = +vb[2];
+    const d = [...svg.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]).join(' ');
+    const W = px(bc.wmm), k = W / vw, H = vh * k;
+    const path = new fabric.Path(d, { fill: '#000000', strokeWidth: 0, objectCaching: false });
+    path.set({ left: path.left * k, top: path.top * k, scaleX: k, scaleY: k });
+    const parts = [new fabric.Rect({ left: 0, top: 0, width: W, height: H, fill: 'rgba(0,0,0,0)', strokeWidth: 0 }), path];
+    return new fabric.Group(parts, { originX: 'center', originY: 'center', kind: 'barcode', bc: { ...bc, hmm: mmOf(H) }, lockScalingFlip: true, lockUniScaling: true });
+  }
+
+  // Tables: { rows, cols, cells[r][c], colW[mm], rowH[mm], font, size (pt), color, align, header, headFill, line, lw (mm), pad (mm) }.
+  // Rebuilt as a group of shapes and text whenever something changes.
+  function buildTable(tb) {
+    const W = tb.colW.map(px), H = tb.rowH.map(px), tw = W.reduce((a, b) => a + b, 0), th = H.reduce((a, b) => a + b, 0);
+    const pad = px(tb.pad ?? 1);
+    const parts = [new fabric.Rect({ left: 0, top: 0, width: tw, height: th, fill: 'rgba(0,0,0,0)', strokeWidth: 0 })];
+    let y = 0;
+    for (let r = 0; r < tb.rows; r++) {
+      let x = 0;
+      const head = r === 0 && tb.header;
+      if (head && tb.headFill) parts.push(new fabric.Rect({ left: 0, top: y, width: tw, height: H[r], fill: tb.headFill, strokeWidth: 0 }));
+      for (let c = 0; c < tb.cols; c++) {
+        const text = (tb.cells[r] && tb.cells[r][c]) || '';
+        if (text) {
+          const t = new fabric.Text(text, { fontFamily: tb.font, fontSize: ptToPx(tb.size), fill: tb.color, fontWeight: head ? 'bold' : 'normal', textAlign: tb.align, lineHeight: 1.05 });
+          const k = Math.min(1, (W[c] - 2 * pad) / t.width, (H[r] - 2 * pad) / t.height);
+          if (k < 1) t.set('fontSize', t.fontSize * Math.max(0.05, k));
+          const ox = tb.align === 'center' ? 'center' : tb.align === 'right' ? 'right' : 'left';
+          t.set({ originX: ox, originY: 'center', top: y + H[r] / 2, left: ox === 'center' ? x + W[c] / 2 : ox === 'right' ? x + W[c] - pad : x + pad });
+          parts.push(t);
+        }
+        x += W[c];
+      }
+      y += H[r];
+    }
+    const lw = px(tb.lw || 0);
+    if (lw > 0) {
+      let d = `M0 0H${tw}V${th}H0Z`, x = 0, yy = 0;
+      W.slice(0, -1).forEach((w) => { x += w; d += `M${x} 0V${th}`; });
+      H.slice(0, -1).forEach((h) => { yy += h; d += `M0 ${yy}H${tw}`; });
+      parts.push(new fabric.Path(d, { fill: '', stroke: tb.line || '#000000', strokeWidth: lw, strokeLineCap: 'square', objectCaching: false }));
+    }
+    return new fabric.Group(parts, { originX: 'center', originY: 'center', kind: 'table', tb: JSON.parse(JSON.stringify(tb)), lockScalingFlip: true });
+  }
+  // Put a rebuilt object where the old one was (same centre, angle and stacking order).
+  function swapObject(old, neu) {
+    const c = old.getCenterPoint();
+    neu.set({ angle: old.angle });
+    neu.setPositionByOrigin(c, 'center', 'center');
+    const idx = canvas.getObjects().indexOf(old);
+    quiet(() => { canvas.remove(old); canvas.insertAt(neu, idx); });
+    canvas.setActiveObject(neu);
+    neu.setCoords();
+    canvas.requestRenderAll();
+    pushHistory();
+  }
+
   function buildBarcode(bc) {
     if (bc.type === 'QR') return buildQR(bc);
+    if (BWIP[bc.type]) return buildBwip(bc);
     const { modules, bars } = barcodeBars(bc);
     const W = px(bc.wmm), H = px(bc.hmm);
     const textH = bc.showText ? Math.min(H * 0.3, px(3.5)) : 0;
@@ -1439,6 +1596,20 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   function addBarcode() {
     const g = buildBarcode({ type: 'CODE128', value: 'LC-000123', showText: true, wmm: fitW(45), hmm: fitH(14) });
     g.set(centre()); add(g);
+  }
+  const CODE_SAMPLES = { PDF417: 'LabelCraft PDF417 sample: SMITH, JANE · ID 0012345 · 2026-10-14', MICROPDF417: 'LC-000123', DATAMATRIX: 'LC-000123-A14', AZTEC: 'https://example.com' };
+  function addCode(type) {
+    const wmm = type === 'PDF417' ? fitW(45) : type === 'MICROPDF417' ? Math.min(label.w, label.h) * 0.5 : Math.min(label.w, label.h) * 0.55;
+    let g;
+    try { g = buildBarcode({ type, value: CODE_SAMPLES[type], wmm }); } catch (e) { toast(e.message); return; }
+    g.set(centre()); add(g);
+  }
+  function addTable() {
+    const cols = 3, rows = 4, cw = Math.max(8, label.w * 0.8 / cols), rh = Math.max(3, Math.min(7, label.h * 0.75 / rows));
+    const tb = { rows, cols, cells: [['Item', 'Qty', 'Bin'], ['M6 bolts', '40', 'A-14'], ['M6 nuts', '100', 'A-15'], ['Washers', '200', 'A-16']],
+      colW: Array(cols).fill(cw), rowH: Array(rows).fill(rh), font: 'Arial', size: Math.max(5, Math.min(9, pxToPt(px(rh)) * 0.55)), color: '#000000',
+      align: 'left', header: true, headFill: '#e3e3e3', line: '#000000', lw: 0.25, pad: 0.8 };
+    const g = buildTable(tb); g.set(centre()); add(g);
   }
   function addQR() {
     const g = buildBarcode({ type: 'QR', value: 'https://example.com', ecc: 'M', wmm: Math.min(label.w, label.h) * 0.6 });
@@ -1535,13 +1706,21 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     const o = e.target; if (!o) return;
     if (o.kind === 'text' && (o.scaleX !== 1 || o.scaleY !== 1)) {
       const s = o.scaleY;
-      o.set({ fontSize: o.fontSize * s, scaleX: o.scaleX / s, scaleY: 1 });
+      if (o.type === 'textbox') o.set('width', o.width * o.scaleX);
+      o.set({ fontSize: o.fontSize * s, scaleX: o.type === 'textbox' ? 1 : o.scaleX / s, scaleY: 1 });
+      if (o.type === 'textbox') o.set('width', o.width / s);
       if (Math.abs(o.scaleX - 1) < 0.02) o.set('scaleX', 1);
       o.setCoords();
+    }
+    if (o.kind === 'table' && (Math.abs(o.scaleX - 1) > 0.001 || Math.abs(o.scaleY - 1) > 0.001)) {
+      const t = o.tb;
+      swapObject(o, buildTable({ ...t, colW: t.colW.map((v) => v * o.scaleX), rowH: t.rowH.map((v) => v * o.scaleY) }));
+      return;
     }
     if (o.kind === 'barcode' && (Math.abs(o.scaleX - 1) > 0.001 || Math.abs(o.scaleY - 1) > 0.001)) {
       const bc = { ...o.bc, wmm: mmOf(o.getScaledWidth()), hmm: mmOf(o.getScaledHeight()) };
       if (bc.type === 'QR') bc.wmm = bc.hmm = (bc.wmm + bc.hmm) / 2;
+      else if (is2D(bc.type)) bc.wmm = mmOf(o.getScaledWidth());
       const err = replaceBarcode(o, bc);
       if (err) toast(err);
       return; // replaceBarcode pushes history
@@ -1582,7 +1761,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     const o = active();
     $('p-none').hidden = !!o;
     $('p-obj').hidden = !o;
-    ['p-text', 'p-barcode', 'p-qr', 'p-shape', 'p-image'].forEach((id) => { $(id).hidden = true; });
+    ['p-text', 'p-barcode', 'p-qr', 'p-shape', 'p-image', 'p-table'].forEach((id) => { $(id).hidden = true; });
     document.querySelectorAll('[data-rot], #rot-cw, #rot-ccw, #rot-180').forEach((b) => { b.disabled = !o; });
     if (!o) {
       $('props-title').textContent = 'Label';
@@ -1606,7 +1785,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     }
     const multi = o.type === 'activeSelection';
     const k = multi ? 'multi' : kindOf(o);
-    $('props-title').textContent = { multi: multi ? `${o.size()} items` : '', text: 'Text', barcode: o.bc?.type === 'QR' ? 'QR code' : 'Barcode', rect: 'Box', ellipse: 'Ellipse', line: 'Line', image: 'Image' }[k] || 'Item';
+    $('props-title').textContent = { multi: multi ? `${o.size()} items` : '', text: 'Text', barcode: TWO_D[o.bc?.type] || 'Barcode', table: 'Table', rect: 'Box', ellipse: 'Ellipse', line: 'Line', image: 'Image' }[k] || 'Item';
     $('unit-note').textContent = `(${unit})`;
     const r = o.getBoundingRect(true, true);
     $('p-x').value = toUnit(mmOf(r.left));
@@ -1614,23 +1793,26 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     $('p-w').value = toUnit(mmOf(o.getScaledWidth()));
     $('p-h').value = toUnit(mmOf(o.getScaledHeight()));
     $('p-size-row').hidden = multi || k === 'text';
-    $('p-h').disabled = k === 'line' || o.bc?.type === 'QR';
+    $('p-h').disabled = k === 'line' || is2D(o.bc?.type);
     $('p-angle').value = Math.round(o.angle || 0);
     if (k === 'text') {
       $('p-text').hidden = false;
       if (document.activeElement !== $('t-content')) $('t-content').value = o.text;
-      $('t-font').value = o.fontFamily;
-      $('t-size').value = +pxToPt(o.fontSize).toFixed(1);
-      $('t-color').value = /^#[0-9a-f]{6}$/i.test(o.fill) ? o.fill : '#000000';
-      $('t-bold').setAttribute('aria-pressed', o.fontWeight === 'bold');
-      $('t-italic').setAttribute('aria-pressed', o.fontStyle === 'italic');
-      $('t-underline').setAttribute('aria-pressed', !!o.underline);
+      showTextFormat(o);
       document.querySelectorAll('[data-talign]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.talign === o.textAlign));
       $('t-spacing').value = o.charSpacing || 0;
       $('t-lineh').value = o.lineHeight;
       $('t-invert').checked = !!o.invert;
-    } else if (k === 'barcode' && o.bc.type === 'QR') {
+    } else if (k === 'table') {
+      $('p-table').hidden = false;
+      showTable(o);
+    } else if (k === 'barcode' && is2D(o.bc.type)) {
       $('p-qr').hidden = false;
+      $('q-type').value = o.bc.type;
+      $('q-title').textContent = TWO_D[o.bc.type];
+      $('q-ecc-f').hidden = o.bc.type !== 'QR';
+      $('q-cols-f').hidden = o.bc.type !== 'PDF417';
+      $('q-cols').value = o.bc.cols || 0;
       if (document.activeElement !== $('q-value')) $('q-value').value = o.bc.value;
       $('q-ecc').value = o.bc.ecc || 'M';
     } else if (k === 'barcode') {
@@ -1663,8 +1845,12 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     const o = active(); if (!o) return;
     const w = Math.max(0.5, fromUnit(num('p-w'))), h = Math.max(0.5, fromUnit(num('p-h')));
     if (o.kind === 'barcode') {
-      const err = replaceBarcode(o, { ...o.bc, wmm: w, hmm: o.bc.type === 'QR' ? w : h });
+      const err = replaceBarcode(o, { ...o.bc, wmm: w, hmm: is2D(o.bc.type) ? w : h });
       if (err) toast(err); return;
+    }
+    if (o.kind === 'table') {
+      const t = o.tb, kw = mmOf(px(w)) / t.colW.reduce((a, b) => a + b, 0), kh = mmOf(px(h)) / t.rowH.reduce((a, b) => a + b, 0);
+      swapObject(o, buildTable({ ...t, colW: t.colW.map((v) => v * kw), rowH: t.rowH.map((v) => v * kh) })); return;
     }
     if (o.type === 'line') o.set({ scaleX: px(w) / o.width });
     else o.set({ scaleX: px(w) / o.width, scaleY: px(h) / o.height });
@@ -1678,12 +1864,162 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // Text
   const txt = (fn) => { const o = active(); if (!o || kindOf(o) !== 'text') return; fn(o); o.initDimensions(); modified(o); };
   $('t-content').oninput = () => txt((o) => o.set('text', $('t-content').value || ' '));
-  $('t-font').onchange = () => { const f = $('t-font').value; ensureFont(f).then(() => txt((o) => o.set('fontFamily', f))); };
-  $('t-size').onchange = () => txt((o) => o.set('fontSize', ptToPx(Math.max(2, num('t-size')))));
-  $('t-color').oninput = () => txt((o) => { o.set('fill', $('t-color').value); if (o.invert) o.set('textBackgroundColor', o.fill === '#ffffff' ? '#000000' : ''); });
-  $('t-bold').onclick = () => txt((o) => o.set('fontWeight', o.fontWeight === 'bold' ? 'normal' : 'bold'));
-  $('t-italic').onclick = () => txt((o) => o.set('fontStyle', o.fontStyle === 'italic' ? 'normal' : 'italic'));
-  $('t-underline').onclick = () => txt((o) => o.set('underline', !o.underline));
+  // ---- Word-style formatting. With words selected while editing the text on the label, a change applies to
+  // those words only; otherwise to the whole text.
+  const T = () => { const o = active(); return o && kindOf(o) === 'text' ? o : null; };
+  const range = (o) => (o.isEditing && o.selectionEnd > o.selectionStart ? [o.selectionStart, o.selectionEnd] : null);
+  // The value of a style over the selected words (or the whole text); undefined when it is mixed.
+  function styleOf(o, prop) {
+    const [a, b] = range(o) || [0, o.text.length];
+    if (b <= a) return o[prop];
+    const v = o.getSelectionStyles(a, b, true).map((st) => st[prop]);
+    return v.every((x) => x === v[0]) ? v[0] : undefined;
+  }
+  // Keep fabric's hidden text box in step after changing the text from outside while editing.
+  function syncEditing(o) { if (o.isEditing && o.hiddenTextarea) { o.hiddenTextarea.value = o.text; o._updateTextarea(); } }
+  function setStyle(style) {
+    const o = T(); if (!o) return;
+    const r = range(o);
+    if (r) o.setSelectionStyles(style, r[0], r[1]);
+    else { Object.keys(style).forEach((k) => o.removeStyle(k)); o.set(style); }
+    o.initDimensions(); o.dirty = true; modified(o);
+  }
+  const toggleStyle = (prop, on, off) => { const o = T(); if (o) setStyle({ [prop]: styleOf(o, prop) === on ? off : on }); };
+  const isScript = (o, dir) => { const d = styleOf(o, 'deltaY'); return d != null && (dir < 0 ? d < 0 : d > 0); };
+  function setScript(dir) {
+    const o = T(); if (!o) return;
+    const [a, b] = range(o) || [0, o.text.length];
+    if (isScript(o, dir)) o.setSelectionStyles({ deltaY: 0, fontSize: o.fontSize }, a, b);
+    else if (dir < 0) o.setSuperscript(a, b); else o.setSubscript(a, b);
+    o.initDimensions(); o.dirty = true; modified(o);
+  }
+  const SIZES = [5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 96];
+  function stepSize(dir) {
+    const o = T(); if (!o) return;
+    const cur = pxToPt(styleOf(o, 'fontSize') || o.fontSize);
+    const next = dir > 0 ? SIZES.find((x) => x > cur + 0.01) || Math.round(cur * 1.2) : [...SIZES].reverse().find((x) => x < cur - 0.01) || Math.max(2, cur / 1.2);
+    setStyle({ fontSize: ptToPx(next) });
+  }
+  function changeCase(kind) {
+    const o = T(); if (!o) return;
+    const [a, b] = range(o) || [0, o.text.length];
+    const mid = o.text.slice(a, b);
+    const out = kind === 'upper' ? mid.toUpperCase() : kind === 'lower' ? mid.toLowerCase()
+      : kind === 'title' ? mid.toLowerCase().replace(/(^|[\s\-/(])(\p{L})/gu, (m, s1, c) => s1 + c.toUpperCase())
+      : mid.toLowerCase().replace(/(^\s*|[.!?]\s+)(\p{L})/gu, (m, s1, c) => s1 + c.toUpperCase());
+    if (out.length !== mid.length) { o.removeChars(a, b); o.insertChars(out, null, a); } else o.set('text', o.text.slice(0, a) + out + o.text.slice(b));
+    if (o.isEditing) { o.selectionStart = a; o.selectionEnd = a + out.length; syncEditing(o); }
+    o.initDimensions(); modified(o);
+  }
+  function clearFormat() {
+    const o = T(); if (!o) return;
+    const base = { fontWeight: 'normal', fontStyle: 'normal', underline: false, linethrough: false, overline: false, fill: '#000000', textBackgroundColor: '', stroke: null, strokeWidth: 0, deltaY: 0 };
+    const r = range(o);
+    if (r) { o.removeStyleFromTo(r[0], r[1]); }
+    else { Object.keys(base).forEach((k) => o.removeStyle(k)); o.set({ ...base, invert: false }); }
+    o.initDimensions(); o.dirty = true; modified(o);
+  }
+  // Bullets and numbering: add or remove "• " / "1. " at the start of each line.
+  const BULLET = /^• /, NUMBER = /^\d+\. /;
+  function listState(o) { const lines = o.text.split('\n'); return lines.every((l) => BULLET.test(l)) ? 'bullets' : lines.every((l) => NUMBER.test(l)) ? 'numbers' : ''; }
+  function toggleList(kind) {
+    const o = T(); if (!o) return;
+    const lines = o.text.split('\n'), was = listState(o);
+    const starts = []; let pos = 0; lines.forEach((l) => { starts.push(pos); pos += l.length + 1; });
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const m = lines[i].match(BULLET) || lines[i].match(NUMBER);
+      if (m && (was || BULLET.test(lines[i]) || NUMBER.test(lines[i]))) o.removeChars(starts[i], starts[i] + m[0].length);
+      if (was !== kind) o.insertChars(kind === 'bullets' ? '• ' : `${i + 1}. `, null, starts[i]);
+    }
+    if (o.isEditing) { o.selectionStart = o.selectionEnd = o.text.length; syncEditing(o); }
+    o.initDimensions(); modified(o);
+  }
+  // Wrap: switch between free text and a text box with a fixed width.
+  function setWrap(on) {
+    const o = T(); if (!o || (o.type === 'textbox') === on) return;
+    if (o.isEditing) o.exitEditing();
+    const data = o.toObject(PROPS); delete data.type;
+    data.styles = JSON.parse(JSON.stringify(o.styles || {})); // per-character formatting, in the form the constructor expects
+    const neu = on ? new fabric.Textbox(o.text, { ...data, width: Math.max(o.width, px(15)), splitByGrapheme: false }) : new fabric.IText(o.text, data);
+    swapObject(o, neu);
+  }
+  function fitToLabel() {
+    const o = T(); if (!o) return;
+    const side = Math.abs(((o.angle || 0) % 180)) > 45 && Math.abs(((o.angle || 0) % 180)) < 135;
+    const room = px((side ? label.h : label.w) - 3);
+    if (o.type === 'textbox') { o.set('width', room / (o.scaleX || 1)); o.initDimensions(); }
+    else { const k = room / o.getScaledWidth(); o.set({ scaleX: o.scaleX * k, scaleY: o.scaleY * k }); }
+    o.setCoords(); canvas.fire('object:modified', { target: o });
+    alignTo(side ? 'vcenter' : 'hcenter');
+  }
+  function insertText(str) {
+    const o = T(); if (!o) return;
+    if (o.isEditing) {
+      const a = o.selectionStart;
+      if (o.selectionEnd > a) o.removeChars(a, o.selectionEnd);
+      o.insertChars(str, null, a);
+      o.selectionStart = o.selectionEnd = a + str.length; syncEditing(o);
+    } else o.insertChars((o.text && !/\s$/.test(o.text) ? ' ' : '') + str, null, o.text.length);
+    o.initDimensions(); modified(o);
+  }
+  const HIGHLIGHTS = [['', 'None'], ['#fff176', 'Yellow'], ['#a5f3a1', 'Green'], ['#9be7ff', 'Turquoise'], ['#ffb3d9', 'Pink'], ['#ffcc80', 'Orange'], ['#d9d9d9', 'Grey'], ['#000000', 'Black'], ['custom', 'Other colour…']];
+  $('t-hl').innerHTML = HIGHLIGHTS.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
+  const SYMBOLS = '© ® ™ ° ± × ÷ ½ ¼ ¾ € £ ¥ ¢ § ¶ • … → ← ↑ ↓ ↔ ✓ ✗ ★ ☆ ♥ ☎ ✉ ⚠ ♻ ⌀ µ Ω ∞ ≤ ≥ ≠ ²  ³'.split(/\s+/).filter(Boolean);
+  $('t-insert').innerHTML = '<option value="">Insert…</option><option value="date">Today’s date</option><option value="time">The time</option><optgroup label="Symbols">'
+    + SYMBOLS.map((c) => `<option value="${c}">${c}</option>`).join('') + '</optgroup>';
+  function showTextFormat(o) {
+    const r = range(o);
+    $('t-scope').textContent = r ? `Changes apply to the ${r[1] - r[0]} selected character${r[1] - r[0] === 1 ? '' : 's'}.`
+      : 'Changes apply to all of this text. To change only some words, double-click the text on the label and select them.';
+    const ff = styleOf(o, 'fontFamily'), fs = styleOf(o, 'fontSize'), fill = styleOf(o, 'fill'), hl = styleOf(o, 'textBackgroundColor');
+    $('t-font').value = ff || ''; $('t-size').value = fs ? +pxToPt(fs).toFixed(1) : '';
+    $('t-color').value = /^#[0-9a-f]{6}$/i.test(fill || '') ? fill : '#000000';
+    const hex = /^#[0-9a-f]{6}$/i.test(hl || '') ? hl.toLowerCase() : '';
+    $('t-hl').value = !hl ? '' : HIGHLIGHTS.some(([c]) => c === hex) ? hex : 'custom';
+    $('t-hl-c').value = hex || '#fff176';
+    const st = styleOf(o, 'stroke'), sw = styleOf(o, 'strokeWidth');
+    $('t-stroke').value = /^#[0-9a-f]{6}$/i.test(st || '') ? st : '#000000';
+    $('t-sw').value = st && sw ? +mmOf(sw).toFixed(2) : 0;
+    const press = (id, v) => $(id).setAttribute('aria-pressed', String(!!v));
+    press('t-bold', styleOf(o, 'fontWeight') === 'bold'); press('t-italic', styleOf(o, 'fontStyle') === 'italic');
+    press('t-underline', styleOf(o, 'underline')); press('t-strike', styleOf(o, 'linethrough')); press('t-over', styleOf(o, 'overline'));
+    press('t-sup', isScript(o, -1)); press('t-sub', isScript(o, 1));
+    const ls = listState(o); press('t-bullets', ls === 'bullets'); press('t-numbers', ls === 'numbers');
+    $('t-wrap').checked = o.type === 'textbox';
+    const rf = document.querySelector('.rb-font select'); if (rf && document.activeElement !== rf) rf.value = ff || '';
+    const rs = document.querySelector('.rb-font input'); if (rs && document.activeElement !== rs) rs.value = fs ? +pxToPt(fs).toFixed(1) : '';
+  }
+  // Buttons keep the text in editing mode (and the words selected).
+  document.querySelectorAll('#p-text .btn').forEach((b) => b.addEventListener('mousedown', (e) => e.preventDefault()));
+  canvas.on('text:selection:changed', showProps);
+  $('t-font').onchange = () => { const f = $('t-font').value; ensureFont(f).then(() => setStyle({ fontFamily: f })); };
+  $('t-size').onchange = () => setStyle({ fontSize: ptToPx(Math.max(2, num('t-size') || 12)) });
+  $('t-grow').onclick = () => stepSize(1);
+  $('t-shrink').onclick = () => stepSize(-1);
+  $('t-color').oninput = () => setStyle({ fill: $('t-color').value });
+  $('t-bold').onclick = () => toggleStyle('fontWeight', 'bold', 'normal');
+  $('t-italic').onclick = () => toggleStyle('fontStyle', 'italic', 'normal');
+  $('t-underline').onclick = () => toggleStyle('underline', true, false);
+  $('t-strike').onclick = () => toggleStyle('linethrough', true, false);
+  $('t-over').onclick = () => toggleStyle('overline', true, false);
+  $('t-sup').onclick = () => setScript(-1);
+  $('t-sub').onclick = () => setScript(1);
+  $('t-case').onchange = () => { const v = $('t-case').value; $('t-case').value = ''; if (v) changeCase(v); };
+  $('t-hl').onchange = () => { const v = $('t-hl').value; if (v === 'custom') $('t-hl-c').click(); else setStyle({ textBackgroundColor: v }); };
+  $('t-hl-c').onchange = () => setStyle({ textBackgroundColor: $('t-hl-c').value });
+  const outline = () => { const w = Math.max(0, num('t-sw') || 0); const o = T(); if (o && w) o.set('paintFirst', 'stroke'); setStyle(w ? { stroke: $('t-stroke').value, strokeWidth: px(w) } : { stroke: null, strokeWidth: 0 }); };
+  $('t-stroke').onchange = () => { if (!(num('t-sw') > 0)) $('t-sw').value = 0.2; outline(); };
+  $('t-sw').onchange = outline;
+  $('t-clear').onclick = clearFormat;
+  $('t-bullets').onclick = () => toggleList('bullets');
+  $('t-numbers').onclick = () => toggleList('numbers');
+  $('t-wrap').onchange = () => setWrap($('t-wrap').checked);
+  $('t-fit').onclick = fitToLabel;
+  $('t-insert').onchange = () => {
+    const v = $('t-insert').value; $('t-insert').value = ''; if (!v) return;
+    const now = new Date();
+    insertText(v === 'date' ? now.toLocaleDateString() : v === 'time' ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : v);
+  };
   document.querySelectorAll('[data-talign]').forEach((b) => { b.onclick = () => txt((o) => o.set('textAlign', b.dataset.talign)); });
   $('t-spacing').onchange = () => txt((o) => o.set('charSpacing', num('t-spacing') || 0));
   $('t-lineh').onchange = () => txt((o) => o.set('lineHeight', Math.max(0.6, num('t-lineh') || 1)));
@@ -1710,6 +2046,74 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   $('b-text').onchange = () => updateBc({ showText: $('b-text').checked }, 'b-error');
   $('q-value').oninput = () => updateBc({ value: $('q-value').value }, 'q-error');
   $('q-ecc').onchange = () => updateBc({ ecc: $('q-ecc').value }, 'q-error');
+  $('q-cols').onchange = () => updateBc({ cols: Math.max(0, Math.min(30, Math.round(num('q-cols')) || 0)) }, 'q-error');
+  $('q-type').onchange = () => {
+    const o = active(); if (!o || o.kind !== 'barcode') return;
+    const t = $('q-type').value;
+    let value = $('q-value').value;
+    const wmm = t === 'PDF417' ? Math.max(o.bc.wmm, fitW(40)) : Math.min(o.bc.wmm, Math.min(label.w, label.h) * 0.8);
+    try { buildBarcode({ type: t, value, wmm }); } catch (e) { value = CODE_SAMPLES[t] || value; }
+    updateBc({ type: t, value, wmm }, 'q-error');
+    showProps();
+  };
+
+  // ---- Tables
+  const TB = () => { const o = active(); return o && o.kind === 'table' ? o : null; };
+  let tbCell = [0, 0];
+  function setTable(patch) { const o = TB(); if (!o) return; swapObject(o, buildTable({ ...o.tb, ...patch })); }
+  function showTable(o) {
+    const t = o.tb, grid = $('tb-grid');
+    if (!grid.contains(document.activeElement) || grid.dataset.shape !== `${t.rows}x${t.cols}`) {
+      grid.dataset.shape = `${t.rows}x${t.cols}`;
+      const esc = (v) => String(v || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      grid.innerHTML = '<table>' + Array.from({ length: t.rows }, (_, r) => '<tr>' + Array.from({ length: t.cols }, (_, c) =>
+        `<td><input data-r="${r}" data-c="${c}" class="${r === 0 && t.header ? 'head' : ''}" value="${esc(t.cells[r] && t.cells[r][c])}" aria-label="Row ${r + 1}, column ${c + 1}"></td>`).join('') + '</tr>').join('') + '</table>';
+    }
+    $('tb-font').value = t.font; $('tb-size').value = t.size; $('tb-color').value = t.color || '#000000';
+    $('tb-header').checked = !!t.header; $('tb-head').value = t.headFill || '#e3e3e3'; $('tb-line').value = t.line || '#000000';
+    $('tb-lw').value = t.lw; $('tb-pad').value = t.pad ?? 1;
+    document.querySelectorAll('[data-tbalign]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tbalign === t.align)));
+  }
+  $('tb-font').innerHTML = FONTS.map((f) => `<option style="font-family:'${f}'">${f}</option>`).join('');
+  let tbTimer;
+  $('tb-grid').addEventListener('focusin', (e) => { const i = e.target.closest('input'); if (i) tbCell = [+i.dataset.r, +i.dataset.c]; });
+  $('tb-grid').addEventListener('input', (e) => {
+    const i = e.target.closest('input'), o = TB(); if (!i || !o) return;
+    tbCell = [+i.dataset.r, +i.dataset.c];
+    const cells = o.tb.cells.map((row) => row.slice());
+    cells[+i.dataset.r][+i.dataset.c] = i.value;
+    clearTimeout(tbTimer); tbTimer = setTimeout(() => setTable({ cells }), 150);
+    o.tb.cells = cells;
+  });
+  $('tb-grid').addEventListener('keydown', (e) => {
+    const i = e.target.closest('input'); if (!i || e.key !== 'Enter') return;
+    e.preventDefault();
+    const next = $('tb-grid').querySelector(`input[data-r="${+i.dataset.r + 1}"][data-c="${i.dataset.c}"]`);
+    if (next) next.focus();
+  });
+  $('tb-addrow').onclick = () => { const o = TB(); if (!o) return; const t = o.tb, r = Math.min(tbCell[0], t.rows - 1) + 1;
+    const cells = t.cells.map((x) => x.slice()); cells.splice(r, 0, Array(t.cols).fill('')); const rowH = t.rowH.slice(); rowH.splice(r, 0, t.rowH[r - 1]);
+    setTable({ rows: t.rows + 1, cells, rowH }); };
+  $('tb-addcol').onclick = () => { const o = TB(); if (!o) return; const t = o.tb, c = Math.min(tbCell[1], t.cols - 1) + 1;
+    const cells = t.cells.map((x) => { const y = x.slice(); y.splice(c, 0, ''); return y; }); const colW = t.colW.slice(); colW.splice(c, 0, t.colW[c - 1]);
+    setTable({ cols: t.cols + 1, cells, colW }); };
+  $('tb-delrow').onclick = () => { const o = TB(); if (!o || o.tb.rows < 2) return; const t = o.tb, r = Math.min(tbCell[0], t.rows - 1);
+    setTable({ rows: t.rows - 1, cells: t.cells.filter((_, i) => i !== r), rowH: t.rowH.filter((_, i) => i !== r) }); tbCell = [0, tbCell[1]]; };
+  $('tb-delcol').onclick = () => { const o = TB(); if (!o || o.tb.cols < 2) return; const t = o.tb, c = Math.min(tbCell[1], t.cols - 1);
+    setTable({ cols: t.cols - 1, cells: t.cells.map((x) => x.filter((_, i) => i !== c)), colW: t.colW.filter((_, i) => i !== c) }); tbCell = [tbCell[0], 0]; };
+  $('tb-font').onchange = () => { const f = $('tb-font').value; ensureFont(f).then(() => setTable({ font: f })); };
+  $('tb-size').onchange = () => setTable({ size: Math.max(2, num('tb-size') || 8) });
+  $('tb-color').onchange = () => setTable({ color: $('tb-color').value });
+  $('tb-header').onchange = () => setTable({ header: $('tb-header').checked });
+  $('tb-head').onchange = () => setTable({ headFill: $('tb-head').value, header: true });
+  $('tb-line').onchange = () => setTable({ line: $('tb-line').value });
+  $('tb-lw').onchange = () => setTable({ lw: Math.max(0, num('tb-lw') || 0) });
+  $('tb-pad').onchange = () => setTable({ pad: Math.max(0, num('tb-pad') || 0) });
+  document.querySelectorAll('[data-tbalign]').forEach((b) => { b.onclick = () => setTable({ align: b.dataset.tbalign }); });
+  $('tb-evencols').onclick = () => { const o = TB(); if (!o) return; const t = o.tb, w = t.colW.reduce((a, b) => a + b, 0) / t.cols; setTable({ colW: Array(t.cols).fill(w) }); };
+  $('tb-evenrows').onclick = () => { const o = TB(); if (!o) return; const t = o.tb, h = t.rowH.reduce((a, b) => a + b, 0) / t.rows; setTable({ rowH: Array(t.rows).fill(h) }); };
+  // Double-click a table on the label to type in it.
+  canvas.on('mouse:dblclick', (e) => { if (e.target && e.target.kind === 'table') { const i = $('tb-grid').querySelector('input'); if (i) { $('right').classList.add('open'); i.focus(); i.select(); } } });
 
   // Shapes
   const shp = (fn) => { const o = active(); if (!o || !['rect', 'ellipse', 'line'].includes(kindOf(o))) return; fn(o); modified(o); };
@@ -2217,6 +2621,7 @@ ${shape}${bwOpen}`);
     <tr><td>Undo / Redo</td><td>Ctrl+Z / Ctrl+Y</td></tr>
     <tr><td>Cut / Copy / Paste</td><td>Ctrl+X / C / V</td></tr><tr><td>Duplicate</td><td>Ctrl+D</td></tr>
     <tr><td>Select all</td><td>Ctrl+A</td></tr><tr><td>Delete selection</td><td>Delete</td></tr>
+    <tr><td>Bold / Italic / Underline</td><td>Ctrl+B / I / U</td></tr><tr><td>Bigger / smaller text</td><td>Ctrl+] / Ctrl+[</td></tr>
     <tr><td>Rotate 90° right / left</td><td>R / Shift+R</td></tr>
     <tr><td>Nudge 0.5 mm / 5 mm</td><td>Arrows / Shift+Arrows</td></tr>
     <tr><td>Zoom in / out / fit</td><td>+ / − / 0</td></tr>
@@ -2228,12 +2633,14 @@ ${shape}${bwOpen}`);
       <li>Drag to move, pull the corner handles to resize, and use the round handle or the rotate buttons to turn things 90° or 180°.</li>
       <li>Change the details on the right: font and size for text, type and data for barcodes, exact position and size in ${unit}.</li>
       <li>The dashed red line marks the safe printing area. Keep important content inside it.</li></ol>
+    <h3>Formatting text</h3><p>Select a text item and use the <b>Text</b> tab or the panel on the right: font, size, bold, italic, underline, strikethrough, overline, superscript, subscript, colour, highlight, outline, case, alignment, bullets and numbering. To format only some words, double-click the text on the label, select the words, then choose the formatting. <b>Wrap in a box</b> keeps text to a set width; <b>Fit to label</b> makes it exactly as wide as the label.</p>
+    <h3>Tables and 2D codes</h3><p><b>Insert › Table</b> adds a grid you type into on the right (double-click the table to start typing). <b>Insert › PDF417</b>, Data Matrix, Aztec and Micro PDF417 add 2D codes that hold much more than a normal barcode.</p>
     <h3>Colour or black &amp; white</h3><p>Thermal label printers (Dymo, Brother, Zebra) print only black, so their labels start in <b>Black &amp; white</b> and the preview shows it. Sheet labels start in <b>Full colour</b> for inkjet and colour laser printers. Switch any time under <b>Print colour</b> on the right or on the Home tab.</p>
     <h3>Sheets for laser and inkjet printers</h3><p>Pick an Avery code (searching for any compatible code works, for example 8160 finds 5160) or a form from <b>Laser and inkjet forms</b>. <b>Print</b> then fills a whole sheet, or prints a few labels starting at any position so you can use up a partly used sheet. Use <b>Custom size › Sheet of labels</b> for any other sheet.</p>
     <h3>CDs, DVDs and cases</h3><p><b>CD and DVD labels</b> are discs with the centre hole cut out (Avery 8931 / L7676, full-face labels, printable discs and mini CDs). <b>CD and DVD case inserts</b> cover jewel case fronts, folded booklets, tray cards with both spines, and DVD, slim DVD and Blu-ray covers. Blue dashed lines show where the paper folds (spines); they are not printed. Inserts print with cut marks and fold marks so you can trim them.</p>
     <h3>3. Print or export</h3><p><b>File › Print</b> sends the label at its real size to your label printer. In the print window, choose your printer and its label size, and set scale to 100% (Actual size). <b>Export</b> saves PNG, JPG or SVG at your printer's resolution.</p>`;
-  const aboutHtml = `<p><b>LabelCraft</b> · version 0.2</p><p>A label designer for Dymo, Brother, Zebra and Avery sheet labels, in full colour or black &amp; white, running in your browser.</p>
-    <p>Built with <a href="https://fabricjs.com" target="_blank" rel="noopener">Fabric.js</a> 5.3 (MIT), <a href="https://github.com/lindell/JsBarcode" target="_blank" rel="noopener">JsBarcode</a> 3.11 (MIT) and <a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener">qrcode-generator</a> 1.4 (MIT).</p>
+  const aboutHtml = `<p><b>LabelCraft</b> · version 0.3</p><p>A label designer for Dymo, Brother, Zebra and Avery sheet labels, in full colour or black &amp; white, running in your browser.</p>
+    <p>Built with <a href="https://fabricjs.com" target="_blank" rel="noopener">Fabric.js</a> 5.3 (MIT), <a href="https://github.com/lindell/JsBarcode" target="_blank" rel="noopener">JsBarcode</a> 3.11 (MIT) and <a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener">qrcode-generator</a> 1.4 (MIT) and <a href="https://github.com/metafloor/bwip-js" target="_blank" rel="noopener">bwip-js</a> 4.10 (MIT) for PDF417, Data Matrix and Aztec.</p>
     <p style="color:var(--muted)">Label names and codes are used only to identify compatible sizes. Check measurements against your own stock before printing large runs.</p>`;
 
   // =====================================================================
@@ -2302,11 +2709,48 @@ ${shape}${bwOpen}`);
       { label: 'Text', run: addText },
       { label: 'Barcode', run: addBarcode },
       { label: 'QR code', run: addQR },
+      { label: 'PDF417 barcode', run: () => addCode('PDF417') },
+      { label: 'Data Matrix code', run: () => addCode('DATAMATRIX') },
+      { label: 'Aztec code', run: () => addCode('AZTEC') },
+      { label: 'Micro PDF417 code', run: () => addCode('MICROPDF417') },
+      '-',
+      { label: 'Table', run: addTable },
       '-',
       { label: 'Box', run: addRect },
       { label: 'Ellipse', run: addEllipse },
       { label: 'Line', run: addLine },
       { label: 'Image or logo…', run: () => imageInput.click() },
+    ]],
+    ['Format', [
+      { label: 'Bold', key: 'Ctrl+B', run: () => toggleStyle('fontWeight', 'bold', 'normal'), disabled: () => !T(), checked: () => !!T() && styleOf(T(), 'fontWeight') === 'bold' },
+      { label: 'Italic', key: 'Ctrl+I', run: () => toggleStyle('fontStyle', 'italic', 'normal'), disabled: () => !T(), checked: () => !!T() && styleOf(T(), 'fontStyle') === 'italic' },
+      { label: 'Underline', key: 'Ctrl+U', run: () => toggleStyle('underline', true, false), disabled: () => !T(), checked: () => !!T() && !!styleOf(T(), 'underline') },
+      { label: 'Strikethrough', run: () => toggleStyle('linethrough', true, false), disabled: () => !T(), checked: () => !!T() && !!styleOf(T(), 'linethrough') },
+      { label: 'Overline', run: () => toggleStyle('overline', true, false), disabled: () => !T(), checked: () => !!T() && !!styleOf(T(), 'overline') },
+      { label: 'Superscript', run: () => setScript(-1), disabled: () => !T(), checked: () => !!T() && isScript(T(), -1) },
+      { label: 'Subscript', run: () => setScript(1), disabled: () => !T(), checked: () => !!T() && isScript(T(), 1) },
+      '-',
+      { label: 'Bigger text', key: 'Ctrl+]', run: () => stepSize(1), disabled: () => !T() },
+      { label: 'Smaller text', key: 'Ctrl+[', run: () => stepSize(-1), disabled: () => !T() },
+      { label: 'Clear formatting', run: clearFormat, disabled: () => !T() },
+      '-',
+      { heading: 'Change case' },
+      { label: 'UPPERCASE', run: () => changeCase('upper'), disabled: () => !T() },
+      { label: 'lowercase', run: () => changeCase('lower'), disabled: () => !T() },
+      { label: 'Title Case', run: () => changeCase('title'), disabled: () => !T() },
+      { label: 'Sentence case', run: () => changeCase('sentence'), disabled: () => !T() },
+      '-',
+      { heading: 'Paragraph' },
+      { label: 'Align left', run: () => txt((o) => o.set('textAlign', 'left')), disabled: () => !T(), checked: () => T()?.textAlign === 'left' },
+      { label: 'Align centre', run: () => txt((o) => o.set('textAlign', 'center')), disabled: () => !T(), checked: () => T()?.textAlign === 'center' },
+      { label: 'Align right', run: () => txt((o) => o.set('textAlign', 'right')), disabled: () => !T(), checked: () => T()?.textAlign === 'right' },
+      { label: 'Justify', run: () => txt((o) => o.set('textAlign', 'justify')), disabled: () => !T(), checked: () => T()?.textAlign === 'justify' },
+      { label: 'Bullets', run: () => toggleList('bullets'), disabled: () => !T(), checked: () => !!T() && listState(T()) === 'bullets' },
+      { label: 'Numbering', run: () => toggleList('numbers'), disabled: () => !T(), checked: () => !!T() && listState(T()) === 'numbers' },
+      '-',
+      { label: 'Wrap text in a box', run: () => setWrap(T()?.type !== 'textbox'), disabled: () => !T(), checked: () => T()?.type === 'textbox' },
+      { label: 'Fit text to label', run: fitToLabel, disabled: () => !T() },
+      { label: 'Insert today’s date', run: () => insertText(new Date().toLocaleDateString()), disabled: () => !T() },
     ]],
     ['View', [
       { label: 'Zoom in', key: '+', run: () => { autoFit = false; setZoom(zoom * 1.25); } },
@@ -2398,7 +2842,7 @@ ${shape}${bwOpen}`);
 
   document.addEventListener('keydown', (e) => {
     if (openMenu && e.key === 'Escape') { const b = openMenu.btn; closeMenus(); b.focus(); return; }
-    const dialogOpen = !$('ask').hidden || !$('export').hidden || !$('info').hidden;
+    const dialogOpen = !$('ask').hidden || !$('export').hidden || !$('info').hidden || !$('sheet').hidden;
     if (dialogOpen) return;
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || active()?.isEditing;
     const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
@@ -2406,6 +2850,13 @@ ${shape}${bwOpen}`);
     if (mod && k === 'o') { e.preventDefault(); openFile(); return; }
     if (mod && k === 'e') { e.preventDefault(); openExport(); return; }
     if (mod && k === 'p') { e.preventDefault(); printLabel(); return; }
+    // Text formatting shortcuts, while editing text or with a text item selected.
+    const tx = T();
+    if (mod && tx && (tx.isEditing || !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) {
+      const f = { b: () => toggleStyle('fontWeight', 'bold', 'normal'), i: () => toggleStyle('fontStyle', 'italic', 'normal'), u: () => toggleStyle('underline', true, false),
+        ']': () => stepSize(1), '[': () => stepSize(-1) }[k];
+      if (f) { e.preventDefault(); f(); return; }
+    }
     if (typing) return;
     if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod && k === 'y') { e.preventDefault(); redo(); return; }
@@ -2462,6 +2913,17 @@ ${shape}${bwOpen}`);
   if (window.CraftTitlebar && window.CraftRibbon) {
     const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lbc-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c0392b"/><stop offset=".55" stop-color="#d4542c"/><stop offset="1" stop-color="#e0782c"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="11" fill="url(#lbc-g)"/><path d="M8 12h18.5l6 8-6 8H8Z" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="20" r="1.6" fill="#fff"/><path d="M11.5 16v8M14 16v8M16 16v8M18.5 16v8M21 16v8" stroke="#fff" stroke-width="1.4"/><path d="M30.5 6.5l1 2.3 2.3 1-2.3 1-1 2.3-1-2.3-2.3-1 2.3-1Z" fill="#ffe066"/></svg>`;
     const I = window.CraftIcons;
+    // Ribbon helpers: letters as icons, the font box, alignment and PDF417 icons.
+    const TXT = (t, css = '') => `<text x="12" y="17" text-anchor="middle" font-size="${t.length > 1 ? 12 : 15}" font-family="Georgia, serif" fill="currentColor" stroke="none" style="${css}">${t}</text>`;
+    const ALIGN = { left: '<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>', center: '<path d="M4 6h16M7 10h10M4 14h16M7 18h10"/>', right: '<path d="M4 6h16M10 10h10M4 14h16M10 18h10"/>',
+      justify: '<path d="M4 6h16M4 10h16M4 14h16M4 18h10"/>', bullets: '<circle cx="5" cy="7" r="1.2"/><circle cx="5" cy="12" r="1.2"/><circle cx="5" cy="17" r="1.2"/><path d="M9 7h11M9 12h11M9 17h11"/>',
+      numbers: '<path d="M4 5h1.5v4M4 9h3M4 14.5c0-1 2.8-1 2.8.4 0 1-2.8 1.6-2.8 3.1h3M10 7h10M10 12h10M10 17h10"/>' };
+    const PDF_ICON = '<path d="M3 5v14M5 5v14M7 5v14"/><path d="M10 6h2v3h-2zM13 6h4v3h-4zM10 10.5h4v3h-4zM15 10.5h2v3h-2zM10 15h2v3h-2zM13 15h4v3h-4z" class="fill"/><path d="M19 5v14M21 5v14"/>';
+    const FONT_BOX = document.createElement('div'); FONT_BOX.className = 'rb-font';
+    FONT_BOX.innerHTML = `<select aria-label="Font">${FONTS.map((f) => `<option style="font-family:'${f}'">${f}</option>`).join('')}</select><input type="number" min="2" step="0.5" list="t-sizes" aria-label="Font size (pt)" title="Font size (pt)">`;
+    FONT_BOX.querySelector('select').onchange = (e) => { $('t-font').value = e.target.value; $('t-font').onchange(); };
+    FONT_BOX.querySelector('input').onchange = (e) => { $('t-size').value = e.target.value; $('t-size').onchange(); };
+    FONT_BOX.addEventListener('mousedown', (e) => { if (e.target === FONT_BOX) e.preventDefault(); });
     const COLOR_ICON = '<circle cx="9" cy="9" r="5" fill="#e0483e" stroke="none"/><circle cx="15" cy="9" r="5" fill="#2f8be0" stroke="none" opacity=".85"/><circle cx="12" cy="14.5" r="5" fill="#f2c200" stroke="none" opacity=".85"/>';
     const BW_ICON = '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor"/>';
     const st = document.createElement('style');
@@ -2483,9 +2945,21 @@ ${shape}${bwOpen}`);
           ['Print colour', [C('Full colour', 'Full colour', COLOR_ICON, { big: true, title: 'For inkjet and colour laser printers' }), C('Black & white', 'Black & white', BW_ICON, { big: true, title: 'For thermal label printers: black dots only' })]],
         ] },
         { id: 'insert', label: 'Insert', hue: '#1e9e6a', groups: [
-          ['Text and codes', [B('Text', I.text, click('add-text'), { big: true }), B('Barcode', I.barcode, click('add-barcode'), { big: true }), B('QR code', I.qr, click('add-qr'), { big: true })]],
+          ['Text and codes', [B('Text', I.text, click('add-text'), { big: true }), B('Barcode', I.barcode, click('add-barcode'), { big: true }), B('QR code', I.qr, click('add-qr'), { big: true }),
+            C('PDF417 barcode', 'PDF417', PDF_ICON, { big: true, title: 'PDF417: lots of data in a small space (ID cards, shipping, boarding passes)' }),
+            { col: [C('Data Matrix code', 'Data Matrix', I.qr), C('Aztec code', 'Aztec', I.qr), C('Micro PDF417 code', 'Micro PDF417', PDF_ICON)] }]],
+          ['Tables', [C('Table', 'Table', I.table, { big: true, title: 'A grid of cells with text' })]],
           ['Shapes', [B('Box', I.box, click('add-rect'), { big: true }), B('Ellipse', I.ellipse, click('add-ellipse'), { big: true }), B('Line', I.line, click('add-line'), { big: true })]],
           ['Pictures', [B('Image or logo', I.picture, click('add-image'), { big: true })]],
+        ] },
+        { id: 'text', label: 'Text', hue: '#2f6fdd', groups: [
+          ['Font', [{ el: FONT_BOX }, { col: [C('Bold', 'Bold', TXT('B', 'font-weight:700')), C('Italic', 'Italic', TXT('I', 'font-style:italic;font-family:Georgia,serif')), C('Underline', 'Underline', TXT('U', 'text-decoration:underline'))] },
+            { col: [C('Strikethrough', 'Strikethrough', TXT('S', 'text-decoration:line-through')), C('Superscript', 'Superscript', TXT('x²')), C('Subscript', 'Subscript', TXT('x₂'))] },
+            { col: [C('Bigger text', 'Bigger', TXT('A+')), C('Smaller text', 'Smaller', TXT('A−')), C('Clear formatting', 'Clear formatting', I.clear)] }]],
+          ['Case', [{ col: [C('UPPERCASE', 'UPPERCASE', TXT('AB')), C('lowercase', 'lowercase', TXT('ab')), C('Title Case', 'Title Case', TXT('Ab'))] }]],
+          ['Paragraph', [{ col: [C('Align left', 'Left', ALIGN.left), C('Align centre', 'Centre', ALIGN.center), C('Align right', 'Right', ALIGN.right)] },
+            { col: [C('Justify', 'Justify', ALIGN.justify), C('Bullets', 'Bullets', ALIGN.bullets), C('Numbering', 'Numbering', ALIGN.numbers)] }]],
+          ['Text box', [C('Wrap text in a box', 'Wrap in a box', I.box, { big: true }), C('Fit text to label', 'Fit to label', I.fit, { big: true })]],
         ] },
         { id: 'arrange', label: 'Arrange', hue: '#e07a1f', groups: [
           ['Rotate', [B('Rotate left', I.rotL, click('rot-ccw'), { big: true, title: 'Rotate 90° left (Shift+R)' }), B('Rotate right', I.rotR, click('rot-cw'), { big: true, title: 'Rotate 90° right (R)' }), B('Rotate 180°', I.rot180, click('rot-180'), { big: true })]],

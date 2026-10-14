@@ -17,6 +17,7 @@ LOCAL = {
     CDN + "fabric.js/5.3.1/fabric.min.js": "lib/fabric.min.js",
     CDN + "jsbarcode/3.11.6/JsBarcode.all.min.js": "lib/JsBarcode.all.min.js",
     CDN + "qrcode-generator/1.4.4/qrcode.min.js": "lib/qrcode.min.js",
+    CDN + "bwip-js/4.10.2/bwip-js-min.js": "lib/bwip-js-min.js",
 }
 standalone_body = page
 for cdn, local in LOCAL.items():

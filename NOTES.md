@@ -48,6 +48,9 @@ The Office-style strip at the very top is the shared `CraftTitlebar` component, 
 - **Sheets**: each sheet stock has `sheet: {page, pw, ph, cols, rows, lw, lh, left, top, hp, vp, approx}` in mm (built by `sheets()` from rows in inches or mm). Rows without margins are centred on the page and marked `approx`; the print dialog then suggests a test page with outlines. `also` lists other product codes with the same layout (searchable).
 - **"Turn label 90°" on a sheet** stores `label.turn`; `cellImage` turns the picture back so it lands the right way on the sheet.
 - **Discs** are shape `'disc'` with `label.hole` (mm): the canvas clip is an even-odd path (outer circle minus hole) and `#hole` covers the hole on screen. **Fold lines** are `label.folds` (`{x}` or `{y}` in mm, as designed); they are a DOM overlay (`#folds`), so they never print, and `turnFolds` turns them with the label. Case inserts that sit sideways on the page have `turn: 270` in the catalogue; `sheet.cut` turns on cut and fold marks by default.
+- **Text formatting** works on the selected characters while editing (`range(o)`), otherwise on the whole text (`removeStyle` then `set`). `styleOf` reads a style over the range and returns undefined when mixed. Panel buttons `preventDefault` on mousedown so the text stays in editing mode. After changing text from code while editing, `syncEditing` copies it into fabric's hidden textarea (otherwise the next keystroke would undo it). Converting to a wrapped `Textbox` copies `o.styles` directly, because `toObject` writes styles in array form.
+- **Tables** are `kind: 'table'` groups rebuilt from `o.tb` (cells, column widths and row heights in mm, font, lines) by `buildTable`; `swapObject` replaces the group in place. Scaling a table stretches columns and rows instead of scaling text.
+- **PDF417, Micro PDF417, Data Matrix and Aztec** come from bwip-js 4.10.2 (`lib/bwip-js-min.js`, MIT): `toSVG` with scale 1, the path is placed in a group and scaled to the width; height follows the code's own shape.
 - Sheet pages are drawn at 300 DPI with image smoothing off, so black & white dots stay pure. The printer adjustment is kept in localStorage `labelcraft-sheet-adjust`.
 
 - **"Turn label 90°" turns the whole label,** content and all. Rotating an object only turns that object.
@@ -61,6 +64,7 @@ The Office-style strip at the very top is the shared `CraftTitlebar` component, 
 | 2026-10-13 | First version: stock catalogue, text, barcodes, QR codes, shapes, images, rotation, save/open, export |
 | 2026-10-13 | Fonts made offline (`fetch_fonts.py`, `fonts/`) |
 | 2026-10-14 | Ribbon, logo menu, customizable quick buttons |
+| 2026-10-14 | v0.3: word-processor text formatting (per-word styles, highlight, outline, case, lists, justify, wrap, fit), tables, PDF417 / Micro PDF417 / Data Matrix / Aztec (bwip-js) |
 | 2026-10-14 | CD/DVD disc labels with centre hole, spine strips, jewel case / booklet / tray card / DVD / slim DVD / Blu-ray inserts, fold lines, cut and fold marks |
 | 2026-10-14 | v0.2: full colour or black & white, Avery US and A4 sheet layouts with compatible codes, laser/inkjet forms, custom sheets, sheet printing from any position, any colour for shapes; fixed an error when selecting a single shape |
 
