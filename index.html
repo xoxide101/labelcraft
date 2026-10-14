@@ -394,7 +394,14 @@ input[type="color"].input { padding: 2px; height: 30px; }
         </div>
 
         <div class="sec" id="p-text" hidden>
-          <h3>Text</h3>
+          <div id="t-stamp" hidden>
+            <h3>Date and time (updates itself)</h3>
+            <label class="field"><span>Format</span><select class="input" id="ts-fmt"></select></label>
+            <div class="row2"><label class="field"><span>Words before</span><input class="input" id="ts-before"></label><label class="field"><span>Words after</span><input class="input" id="ts-after"></label></div>
+            <button class="btn outline" id="ts-fixed" type="button">Make it fixed text</button>
+            <p class="hint">Shows the current date or time whenever you open, print or export. Double-click it for more formats.</p>
+          </div>
+          <h3 id="t-content-h">Text</h3>
           <textarea class="input" id="t-content" rows="3" aria-label="Text"></textarea>
           <p class="hint" id="t-scope"></p>
           <h3>Font</h3>
@@ -1440,7 +1447,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // =====================================================================
   // Canvas
   // =====================================================================
-  const PROPS = ['kind', 'bc', 'invert', 'tb', 'arc', 'shape', 'fx', 'origSrc'];
+  const PROPS = ['kind', 'bc', 'invert', 'tb', 'arc', 'shape', 'fx', 'origSrc', 'stamp'];
   fabric.Object.prototype.set({
     transparentCorners: false, cornerColor: '#ffffff', cornerStrokeColor: '#c8322b', borderColor: '#c8322b',
     cornerStyle: 'circle', cornerSize: 10, borderScaleFactor: 1.5, padding: 0,
@@ -1559,6 +1566,89 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     return c;
   }
   const loadImg = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  // Date and time (the same in every Craft app): Word-style formats and the Insert › Date and time dialog.
+  // Static = the words are typed in once. Dynamic = a field that shows the current date or time whenever it is
+  // opened, printed or exported. A stamp model is { fmt, before, after }.
+  const DATE_FORMATS = [
+    ['short', 'Short date', (d) => d.toLocaleDateString()],
+    ['long', 'Long date', (d) => d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
+    ['mdy', 'Month day, year', (d) => d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })],
+    ['mdyShort', 'Short month', (d) => d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })],
+    ['dmy', 'Day month year', (d) => `${d.getDate()} ${d.toLocaleDateString(undefined, { month: 'long' })} ${d.getFullYear()}`],
+    ['iso', 'Year-month-day', (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`],
+    ['monthYear', 'Month and year', (d) => d.toLocaleDateString(undefined, { year: 'numeric', month: 'long' })],
+    ['weekday', 'Day of the week', (d) => d.toLocaleDateString(undefined, { weekday: 'long' })],
+    ['year', 'Year', (d) => String(d.getFullYear())],
+    ['time', 'Time', (d) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })],
+    ['time24', 'Time (24-hour)', (d) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`],
+    ['timeSec', 'Time with seconds', (d) => d.toLocaleTimeString()],
+    ['dateTime', 'Date and time', (d) => `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`],
+    ['stampDMY', 'Stamp: 14 OCT 2026', (d) => `${d.getDate()} ${d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${d.getFullYear()}`],
+    ['stampMDY', 'Stamp: OCT 14 2026', (d) => `${d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${d.getDate()} ${d.getFullYear()}`],
+    ['stampFull', 'Stamp: date and time', (d) => `${DATE_FORMATS[5][2](d)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`],
+  ];
+  const dateText = (fmt, d = new Date()) => (DATE_FORMATS.find((f) => f[0] === fmt) || DATE_FORMATS[0])[2](d);
+  const stampText = (s, d = new Date()) => (s.before || '') + dateText(s.fmt, d) + (s.after || '');
+  // The dialog: pick a format, add words before or after, choose fixed text or a field that updates itself.
+  // Resolves to { fmt, before, after, dynamic, text } or null. `dynamicNote` explains what "updates" means in this app.
+  function dateDialog({ title = 'Date and time', fmt = 'long', before = '', after = '', dynamic = false, allowDynamic = true, dynamicNote = 'Shows the current date or time every time you open, print or export.' } = {}) {
+    return new Promise((res) => {
+      if (!document.getElementById('dt-style')) {
+        const st = document.createElement('style'); st.id = 'dt-style';
+        st.textContent = '.dt-bd{position:fixed;inset:0;background:rgba(0,0,0,.4);display:grid;place-items:center;z-index:100000}'
+          + '.dt-dlg{background:var(--panel,#fff);color:var(--fg,#222);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.3);width:min(560px,94vw);max-height:90vh;overflow:auto;padding:18px 20px;font:14px/1.4 system-ui,"Segoe UI",sans-serif}'
+          + '.dt-dlg h2{margin:0 0 12px;font-size:17px}.dt-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}'
+          + '.dt-list{border:1px solid var(--line,#ccc);border-radius:8px;max-height:300px;overflow:auto;padding:4px}'
+          + '.dt-list button{display:block;width:100%;text-align:left;border:0;background:none;color:inherit;padding:5px 8px;border-radius:5px;cursor:pointer;font:inherit}'
+          + '.dt-list button:hover{background:var(--panel-2,#f1f1f1)}.dt-list button[aria-pressed=true]{background:var(--accent,#2f6fdd);color:#fff}'
+          + '.dt-dlg label{display:grid;gap:3px;font-size:12px;color:var(--muted,#666);margin-bottom:10px}'
+          + '.dt-dlg input[type=text]{height:30px;padding:0 8px;border:1px solid var(--line,#ccc);border-radius:6px;background:var(--panel,#fff);color:var(--fg,#222);font:inherit}'
+          + '.dt-dlg .dt-check{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:inherit}.dt-prev{padding:10px;border:1px dashed var(--line,#ccc);border-radius:8px;font-size:15px;min-height:22px;word-break:break-word}'
+          + '.dt-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.dt-acts button{min-width:80px;height:32px;border-radius:7px;border:1px solid var(--line,#ccc);background:var(--panel-2,#f4f4f4);color:inherit;cursor:pointer;font:inherit}'
+          + '.dt-acts .dt-ok{background:var(--accent,#2f6fdd);border-color:var(--accent,#2f6fdd);color:#fff}@media(max-width:560px){.dt-grid{grid-template-columns:1fr}}';
+        document.head.append(st);
+      }
+      const now = new Date(), esc2 = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+      const bd = document.createElement('div'); bd.className = 'dt-bd';
+      bd.innerHTML = `<div class="dt-dlg" role="dialog" aria-modal="true" aria-label="${esc2(title)}"><h2>${esc2(title)}</h2><div class="dt-grid">
+        <div><div class="dt-list" role="listbox" aria-label="Format">${DATE_FORMATS.map(([k, n, f]) => `<button type="button" data-f="${k}" aria-pressed="${k === fmt}" title="${esc2(n)}">${esc2(f(now))}</button>`).join('')}</div></div>
+        <div><label>Words before<input type="text" data-b value="${esc2(before)}" placeholder="e.g. Printed on "></label><label>Words after<input type="text" data-a value="${esc2(after)}"></label>
+        ${allowDynamic ? `<label class="dt-check"><input type="checkbox" data-dyn ${dynamic ? 'checked' : ''}><span><b>Update automatically</b><br><small>${esc2(dynamicNote)} Leave it off to type it in as fixed text.</small></span></label>` : ''}
+        <label>Preview</label><div class="dt-prev" data-p></div></div></div>
+        <div class="dt-acts"><button type="button" data-x>Cancel</button><button type="button" class="dt-ok" data-ok>Insert</button></div></div>`;
+      document.body.append(bd);
+      let f = fmt;
+      const B = bd.querySelector('[data-b]'), A = bd.querySelector('[data-a]'), D = bd.querySelector('[data-dyn]');
+      const prev = () => { bd.querySelector('[data-p]').textContent = stampText({ fmt: f, before: B.value, after: A.value }) + (D && D.checked ? '  (updates itself)' : ''); };
+      bd.querySelectorAll('[data-f]').forEach((b) => { b.onclick = () => { f = b.dataset.f; bd.querySelectorAll('[data-f]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); prev(); }; b.ondblclick = () => bd.querySelector('[data-ok]').click(); });
+      [B, A].forEach((i) => { i.oninput = prev; }); if (D) D.onchange = prev; prev();
+      const done = (v) => { bd.remove(); res(v); };
+      bd.querySelector('[data-x]').onclick = () => done(null);
+      bd.querySelector('[data-ok]').onclick = () => { const s = { fmt: f, before: B.value, after: A.value }; done({ ...s, dynamic: !!(D && D.checked), text: stampText(s) }); };
+      bd.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Escape') done(null); if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') bd.querySelector('[data-ok]').click(); });
+      bd.onclick = (e) => { if (e.target === bd) done(null); };
+      const sel = bd.querySelector('[aria-pressed=true]') || bd.querySelector('[data-f]'); sel.focus(); sel.scrollIntoView({ block: 'nearest' });
+    });
+  }
+  // Dynamic dates: texts with a `stamp` show the current date or time (on opening, every half minute, printing and exporting).
+  function refreshStamps() {
+    let n = 0;
+    canvas.getObjects().forEach((o) => { if (o.stamp) { o.editable = false; const t = stampText(o.stamp); if (o.text !== t) { o.set('text', t); o.initDimensions(); o.setCoords(); n++; } } });
+    if (n) canvas.requestRenderAll();
+    return n;
+  }
+  setInterval(() => { if (!document.hidden) refreshStamps(); }, 30000);
+  async function insertDate(edit) {
+    const o = edit || T();
+    const r = await dateDialog(edit ? { ...edit.stamp, dynamic: true, title: 'Change the date and time', dynamicNote: 'Shows the current date or time every time you open, print or export the label.' } : { dynamicNote: 'Shows the current date or time every time you open, print or export the label.' });
+    if (!r) return;
+    if (edit) { if (!r.dynamic) delete edit.stamp; else edit.stamp = { fmt: r.fmt, before: r.before, after: r.after }; edit.set({ text: r.text, editable: !r.dynamic }); edit.initDimensions(); modified(edit); showProps(); return; }
+    if (!r.dynamic) { if (o) insertText(r.text); else add(makeText(r.text, { fontSize: ptToPx(Math.max(6, Math.min(14, pxToPt(px(label.h)) * 0.3))) })); return; }
+    if (o && o.isEditing) o.exitEditing();
+    const like = o ? { fontFamily: o.fontFamily, fontSize: o.fontSize * (o.scaleY || 1), fill: o.fill, fontWeight: o.fontWeight, fontStyle: o.fontStyle } : { fontSize: ptToPx(Math.max(6, Math.min(14, pxToPt(px(label.h)) * 0.3))) };
+    add(makeText(r.text, { ...like, editable: false, stamp: { fmt: r.fmt, before: r.before, after: r.after } }));
+    showProps();
+  }
   function addDingbat(ch) { add(makeText(ch, { fontFamily: DINGBAT_FONT, fontSize: ptToPx(Math.max(10, Math.min(48, pxToPt(px(label.h)) * 0.6))) })); }
   function makeText(text, opts = {}) {
     return new fabric.IText(text, {
@@ -2080,6 +2170,8 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     if (k === 'text') {
       $('p-text').hidden = false;
       if (document.activeElement !== $('t-content')) $('t-content').value = o.text;
+      $('t-stamp').hidden = !o.stamp; $('t-content').hidden = $('t-content-h').hidden = !!o.stamp;
+      if (o.stamp) { $('ts-fmt').innerHTML = DATE_FORMATS.map(([v, , f]) => `<option value="${v}" ${v === o.stamp.fmt ? 'selected' : ''}>${f(new Date())}</option>`).join(''); if (document.activeElement !== $('ts-before')) $('ts-before').value = o.stamp.before || ''; if (document.activeElement !== $('ts-after')) $('ts-after').value = o.stamp.after || ''; }
       showTextFormat(o);
       document.querySelectorAll('[data-talign]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.talign === o.textAlign));
       $('t-spacing').value = o.charSpacing || 0;
@@ -2227,6 +2319,12 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // Text
   const txt = (fn) => { const o = active(); if (!o || kindOf(o) !== 'text') return; fn(o); o.initDimensions(); modified(o); };
   $('t-content').oninput = () => txt((o) => o.set('text', $('t-content').value || ' '));
+  const stampSet = (patch) => { const o = T(); if (!o || !o.stamp) return; Object.assign(o.stamp, patch); refreshStamps(); modified(o); };
+  $('ts-fmt').onchange = () => stampSet({ fmt: $('ts-fmt').value });
+  $('ts-before').oninput = () => stampSet({ before: $('ts-before').value });
+  $('ts-after').oninput = () => stampSet({ after: $('ts-after').value });
+  $('ts-fixed').onclick = () => { const o = T(); if (!o) return; delete o.stamp; o.editable = true; modified(o); showProps(); toast('Now it is ordinary text that stays as it is.'); };
+  canvas.on('mouse:dblclick', (e) => { if (e.target && e.target.stamp) insertDate(e.target); });
   // ---- Word-style formatting. With words selected while editing the text on the label, a change applies to
   // those words only; otherwise to the whole text.
   const T = () => { const o = active(); return o && kindOf(o) === 'text' ? o : null; };
@@ -2416,7 +2514,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   const HIGHLIGHTS = [['', 'None'], ['#fff176', 'Yellow'], ['#a5f3a1', 'Green'], ['#9be7ff', 'Turquoise'], ['#ffb3d9', 'Pink'], ['#ffcc80', 'Orange'], ['#d9d9d9', 'Grey'], ['#000000', 'Black'], ['custom', 'Other colour…']];
   $('t-hl').innerHTML = HIGHLIGHTS.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
   const SYMBOLS = '© ® ™ ° ± × ÷ ½ ¼ ¾ € £ ¥ ¢ § ¶ • … → ← ↑ ↓ ↔ ✓ ✗ ★ ☆ ♥ ☎ ✉ ⚠ ♻ ⌀ µ Ω ∞ ≤ ≥ ≠ ²  ³'.split(/\s+/).filter(Boolean);
-  $('t-insert').innerHTML = '<option value="">Insert…</option><option value="date">Today’s date</option><option value="time">The time</option><optgroup label="Symbols">'
+  $('t-insert').innerHTML = '<option value="">Insert…</option><option value="date">Date and time…</option><optgroup label="Symbols">'
     + SYMBOLS.map((c) => `<option value="${c}">${c}</option>`).join('') + '</optgroup>';
   function showTextFormat(o) {
     const r = range(o);
@@ -2468,8 +2566,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   $('t-fit').onclick = fitToLabel;
   $('t-insert').onchange = () => {
     const v = $('t-insert').value; $('t-insert').value = ''; if (!v) return;
-    const now = new Date();
-    insertText(v === 'date' ? now.toLocaleDateString() : v === 'time' ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : v);
+    if (v === 'date') insertDate(); else insertText(v);
   };
   document.querySelectorAll('[data-talign]').forEach((b) => { b.onclick = () => txt((o) => o.set('textAlign', b.dataset.talign)); });
   $('t-spacing').onchange = () => txt((o) => o.set('charSpacing', num('t-spacing') || 0));
@@ -2796,6 +2893,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     restoring = true;
     canvas.discardActiveObject();
     canvas.loadFromJSON(data.canvas, () => {
+      refreshStamps();
       applyLabel(data.label, { shiftObjects: false });
       const fonts = new Set(canvas.getObjects().map((o) => o.fontFamily).filter(Boolean));
       Promise.all([...fonts].map(ensureFont)).then(refreshText);
@@ -2892,6 +2990,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // ---- Export ----
   // The label as a picture at the given resolution. In black & white, it becomes pure black and white dots.
   function renderCanvas(dpi, transparent, dither = true) {
+    refreshStamps();
     canvas.discardActiveObject();
     const bg = canvas.backgroundColor;
     if (transparent) canvas.backgroundColor = null;
@@ -3233,6 +3332,7 @@ ${shape}${bwOpen}`);
       { label: 'Curved text', run: () => { canvas.discardActiveObject(); curveText('up'); } },
       '-',
       { label: 'Text box', run: addTextBox },
+      { label: 'Date and time… ', run: () => insertDate() },
       { heading: 'Shapes' },
       { label: 'Box', run: () => addShape('rect') },
       { label: 'Rounded box', run: () => addShape('rounded') },
@@ -3289,7 +3389,7 @@ ${shape}${bwOpen}`);
       '-',
       { label: 'Wrap text in a box', run: () => setWrap(T()?.type !== 'textbox'), disabled: () => !T(), checked: () => T()?.type === 'textbox' },
       { label: 'Fit text to label', run: fitToLabel, disabled: () => !T() },
-      { label: 'Insert today’s date', run: () => insertText(new Date().toLocaleDateString()), disabled: () => !T() },
+      { label: 'Date and time…', run: () => insertDate() },
     ]],
     ['View', [
       { label: 'Zoom in', key: '+', run: () => { autoFit = false; setZoom(zoom * 1.25); } },
@@ -3550,14 +3650,14 @@ ${shape}${bwOpen}`);
       const r = DING_BTN.getBoundingClientRect(); pop.style.left = Math.max(8, Math.min(innerWidth - 310, r.left)) + 'px'; pop.style.top = (r.bottom + 4) + 'px';
     };
     const SYMBOL_BTN = menuButton('Insert a symbol or the date', '<path d="M17 17.5A7 7 0 1 1 19 12v1.5a2 2 0 0 1-4 0V8"/><circle cx="12" cy="12" r="3"/>',
-      [['date', 'Today’s date'], ['time', 'The time'], ...SYMBOLS.map((c) => [c, c])],
-      (v) => { const now = new Date(); insertText(v === 'date' ? now.toLocaleDateString() : v === 'time' ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : v); });
+      [['date', 'Date and time…'], ...SYMBOLS.map((c) => [c, c])],
+      (v) => { if (v === 'date') insertDate(); else insertText(v); });
     const LINE_SP = smallSelect('Line spacing', [['0.85', 'Tight (0.85)'], ['1', 'Single (1.0)'], ['1.15', '1.15'], ['1.5', '1.5'], ['2', 'Double (2.0)']],
       (v) => txt((o) => o.set('lineHeight', +v)));
     const LETTER_SP = smallSelect('Letter spacing', [['-60', 'Tight'], ['0', 'Normal'], ['100', 'Wide'], ['250', 'Wider'], ['500', 'Widest']],
       (v) => { if (A()) setArc({ spacing: +v }); else txt((o) => o.set('charSpacing', +v)); });
-    const INSERT_SEL = smallSelect('Symbol or date', [['date', 'Today’s date'], ['time', 'The time'], ...SYMBOLS.map((c) => [c, c])],
-      (v) => { const now = new Date(); insertText(v === 'date' ? now.toLocaleDateString() : v === 'time' ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : v); });
+    const INSERT_SEL = smallSelect('Symbol or date', [['date', 'Date and time…'], ...SYMBOLS.map((c) => [c, c])],
+      (v) => { if (v === 'date') insertDate(); else insertText(v); });
     function invertText() { const o = T(); if (!o) return; $('t-invert').checked = !o.invert; $('t-invert').onchange(); }
     const G = (t, css = '') => `<text x="12" y="17.5" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="currentColor" stroke="none" style="${css}">${t}</text>`;
     const SH = { rect: '<path d="M0 0L18 0L18 16L0 16Z" transform="translate(3 4)"/>', rounded: '<path d="M0 2.4Q0 0 2.4 0L15.6 0Q18 0 18 2.4L18 13.6Q18 16 15.6 16L2.4 16Q0 16 0 13.6Z" transform="translate(3 4)"/>', ellipse: '<path d="M0 8A9 8 0 1 0 18 8A9 8 0 1 0 0 8Z" transform="translate(3 4)"/>', triangle: '<path d="M9 0L18 16L0 16Z" transform="translate(3 4)"/>', diamond: '<path d="M9 0L18 8L9 16L0 8Z" transform="translate(3 4)"/>', pentagon: '<path d="M9 0L17.56 5.53L14.29 14.47L3.71 14.47L0.44 5.53Z" transform="translate(3 4)"/>', hexagon: '<path d="M18 8L13.5 14.93L4.5 14.93L0 8L4.5 1.07L13.5 1.07Z" transform="translate(3 4)"/>', octagon: '<path d="M12.44 0.61L17.31 4.94L17.31 11.06L12.44 15.39L5.56 15.39L0.69 11.06L0.69 4.94L5.56 0.61Z" transform="translate(3 4)"/>', star: '<path d="M9 0L11.38 5.09L17.56 5.53L12.85 9.11L14.29 14.47L9 11.6L3.71 14.47L5.15 9.11L0.44 5.53L6.62 5.09Z" transform="translate(3 4)"/>', arrow: '<path d="M0 4.8L10.8 4.8L10.8 0L18 8L10.8 16L10.8 11.2L0 11.2Z" transform="translate(3 4)"/>' };
@@ -3641,7 +3741,7 @@ ${shape}${bwOpen}`);
             ] }]],
           ['Text box', [{ col: [
             { row: [C('Wrap text in a box', 'Wrap text in a box', IC.wrap, { iconOnly: true }), C('Fit text to label', 'Fit text to label width', IC.fit, { iconOnly: true })] },
-            { row: [{ el: SYMBOL_BTN }, C('Insert today', 'Insert today’s date', I.calendar, { iconOnly: true })] },
+            { row: [{ el: SYMBOL_BTN }, C('Date and time', 'Date and time (fixed or updating)', I.calendar, { iconOnly: true })] },
           ] }]],
         ] },
         { id: 'arrange', label: 'Arrange', hue: '#e07a1f', groups: [

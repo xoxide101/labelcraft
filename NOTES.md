@@ -88,3 +88,7 @@ The Office-style strip at the very top is the shared `CraftTitlebar` component, 
 ## Sliders you can type into
 
 an inline script at the end of `labelcraft.src.html` adds a number box beside every `input[type=range]`, including ones built later (a MutationObserver watches the page). Typing fires the same `input` and `change` events as dragging, so panels need no changes. Wrap a slider in `[data-rt-skip]` to leave it alone. Each app has its own copy.
+
+## Date and time
+
+Dates: `DATE_FORMATS`, `dateText`, `stampText`, `dateDialog` and `insertDate`. A text with a `stamp` model `{ fmt, before, after }` (saved through `PROPS`) is a dynamic date; `refreshStamps()` runs on loading, before every render (`renderCanvas`) and every 30 seconds.
