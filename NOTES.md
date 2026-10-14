@@ -44,6 +44,8 @@ The Office-style strip at the very top is the shared `CraftTitlebar` component, 
 
 ## Decisions
 
+- **Shapes, text boxes and shadows (same features in every Craft app that places objects):** box, circle/oval, triangle, diamond, pentagon, hexagon, octagon, star and arrow (plus lines), with corners from sharp to round (`shapePath`: 100% rounds each corner to half the shortest side), words inside, text boxes with wrapping, border, background, corners and padding, a drop shadow and opacity. Each app has its own copy of the shape geometry.
+
 - **Print colour is part of the label** (`label.mode`: `'bw'` or `'color'`, plus `label.bg`). Picking stock sets it: sheets → colour, everything else → black & white; custom sizes keep the current mode. Black & white output goes through `toBlackWhite` (Atkinson dithering: solid black and white stay solid). The on-screen preview is a CSS grayscale filter on the lower canvas only, so selection handles stay coloured.
 - **Sheets**: each sheet stock has `sheet: {page, pw, ph, cols, rows, lw, lh, left, top, hp, vp, approx}` in mm (built by `sheets()` from rows in inches or mm). Rows without margins are centred on the page and marked `approx`; the print dialog then suggests a test page with outlines. `also` lists other product codes with the same layout (searchable).
 - **"Turn label 90°" on a sheet** stores `label.turn`; `cellImage` turns the picture back so it lands the right way on the sheet.

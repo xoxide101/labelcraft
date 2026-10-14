@@ -559,6 +559,9 @@ input[type="color"].input { padding: 2px; height: 30px; }
           </div>
         </div>
 
+        <div class="sec" id="p-shape2" hidden></div>
+        <div class="sec" id="p-shadow" hidden></div>
+
         <div class="sec" id="p-image" hidden>
           <h3>Image</h3>
           <label class="check"><input type="checkbox" id="i-bw"> Black and white (for thermal printers)</label>
@@ -1430,7 +1433,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // =====================================================================
   // Canvas
   // =====================================================================
-  const PROPS = ['kind', 'bc', 'invert', 'tb', 'arc'];
+  const PROPS = ['kind', 'bc', 'invert', 'tb', 'arc', 'shape'];
   fabric.Object.prototype.set({
     transparentCorners: false, cornerColor: '#ffffff', cornerStrokeColor: '#c8322b', borderColor: '#c8322b',
     cornerStyle: 'circle', cornerSize: 10, borderScaleFactor: 1.5, padding: 0,
@@ -1624,9 +1627,69 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   }
 
   // Put a rebuilt object where the old one was (same centre, angle and stacking order).
+  // Shapes with sharp or rounded corners. Sizes are in any unit; `round` 0 = sharp, 100 = as round as the shape allows.
+  const SHAPES = [['rect', 'Box'], ['ellipse', 'Circle or oval'], ['triangle', 'Triangle'], ['diamond', 'Diamond'], ['pentagon', 'Pentagon'], ['hexagon', 'Hexagon'], ['octagon', 'Octagon'], ['star', 'Star'], ['arrow', 'Arrow'], ['line', 'Line']];
+  function shapePoints(type, w, h, points = 5) {
+    const poly = (n, rot) => Array.from({ length: n }, (_, i) => { const a = ((rot + (360 * i) / n) * Math.PI) / 180; return [w / 2 + (w / 2) * Math.cos(a), h / 2 + (h / 2) * Math.sin(a)]; });
+    switch (type) {
+      case 'triangle': return [[w / 2, 0], [w, h], [0, h]];
+      case 'diamond': return [[w / 2, 0], [w, h / 2], [w / 2, h], [0, h / 2]];
+      case 'pentagon': return poly(5, -90);
+      case 'hexagon': return poly(6, 0);
+      case 'octagon': return poly(8, -67.5);
+      case 'star': { const n = Math.max(3, points), out = []; for (let i = 0; i < 2 * n; i++) { const r = i % 2 ? 0.45 : 1, a = ((-90 + (180 * i) / n) * Math.PI) / 180; out.push([w / 2 + (w / 2) * r * Math.cos(a), h / 2 + (h / 2) * r * Math.sin(a)]); } return out; }
+      case 'arrow': return [[0, h * 0.3], [w * 0.6, h * 0.3], [w * 0.6, 0], [w, h / 2], [w * 0.6, h], [w * 0.6, h * 0.7], [0, h * 0.7]];
+      default: return [[0, 0], [w, 0], [w, h], [0, h]];
+    }
+  }
+  function shapePath(type, w, h, round = 0, points = 5) {
+    const f = (v) => +v.toFixed(2);
+    if (type === 'ellipse') return `M0 ${f(h / 2)}A${f(w / 2)} ${f(h / 2)} 0 1 0 ${f(w)} ${f(h / 2)}A${f(w / 2)} ${f(h / 2)} 0 1 0 0 ${f(h / 2)}Z`;
+    if (type === 'line') return `M0 ${f(h / 2)}L${f(w)} ${f(h / 2)}`;
+    const pts = shapePoints(type, w, h, points), n = pts.length;
+    // 100% rounds each corner to half of the shortest side, so every shape goes smoothly from sharp to fully round.
+    const shortest = Math.min(...pts.map((q, i) => Math.hypot(pts[(i + 1) % n][0] - q[0], pts[(i + 1) % n][1] - q[1]))), R = ((Math.max(0, Math.min(100, round || 0)) / 100) * shortest) / 2;
+    if (!R) return 'M' + pts.map(([x, y]) => `${f(x)} ${f(y)}`).join('L') + 'Z';
+    let d = '';
+    pts.forEach((p, i) => {
+      const a = pts[(i + n - 1) % n], b = pts[(i + 1) % n];
+      const la = Math.hypot(a[0] - p[0], a[1] - p[1]), lb = Math.hypot(b[0] - p[0], b[1] - p[1]), r = Math.min(R, la / 2, lb / 2);
+      const p1 = [p[0] + ((a[0] - p[0]) * r) / la, p[1] + ((a[1] - p[1]) * r) / la], p2 = [p[0] + ((b[0] - p[0]) * r) / lb, p[1] + ((b[1] - p[1]) * r) / lb];
+      d += `${i ? 'L' : 'M'}${f(p1[0])} ${f(p1[1])}Q${f(p[0])} ${f(p[1])} ${f(p2[0])} ${f(p2[1])}`;
+    });
+    return d + 'Z';
+  }
+  // Where words sit inside each shape: centre x, centre y and width, as parts of the shape.
+  const shapeTextBox = (type) => ({ triangle: [0.5, 0.66, 0.55], diamond: [0.5, 0.5, 0.55], star: [0.5, 0.55, 0.42], arrow: [0.42, 0.5, 0.58], ellipse: [0.5, 0.5, 0.72], pentagon: [0.5, 0.56, 0.66], hexagon: [0.5, 0.5, 0.72], octagon: [0.5, 0.5, 0.75] }[type] || [0.5, 0.5, 1]);
+  // A shape or text box (a box with words in it), rebuilt from its model on every change so corners and words never stretch.
+  // Model: { type, w, h (mm), fill, stroke, sw (mm), round (0-100), points, dash, text, font, size (pt), color, align, bold, italic,
+  // underline, valign, pad (mm), lead, shadow: { color, blur, x, y (mm) } }.
+  const shadowOf = (sh) => (sh ? new fabric.Shadow({ color: sh.color || 'rgba(0,0,0,0.35)', blur: px(sh.blur ?? 0.8), offsetX: px(sh.x ?? 0.5), offsetY: px(sh.y ?? 0.5) }) : null);
+  function buildShape(s0) {
+    const s = { ...s0 };
+    const line = s.type === 'line', sw = s.stroke || line ? px(s.sw || (line ? 0.4 : 0.4)) : 0;
+    const W = Math.max(1, px(s.w)), H = line ? Math.max(1, sw) : Math.max(1, px(s.h));
+    const path = new fabric.Path(shapePath(s.type, W, H, s.round || 0, s.points || 5), {
+      fill: line ? '' : s.fill || 'rgba(0,0,0,0)', stroke: line ? s.stroke || '#000000' : s.stroke || null, strokeWidth: sw,
+      strokeLineJoin: s.round ? 'round' : 'miter', strokeLineCap: line && s.round ? 'round' : 'butt', strokeDashArray: s.dash ? [px(1.5), px(1)] : null, objectCaching: false });
+    const parts = [new fabric.Rect({ left: 0, top: 0, width: W, height: H, fill: 'rgba(0,0,0,0)', strokeWidth: 0 }), path];
+    let text = null;
+    if (s.text && !line) {
+      const [cx, cy, tw] = shapeTextBox(s.type), pad = px(s.pad ?? 1), top = s.valign === 'top' && s.type === 'rect';
+      text = new fabric.Textbox(s.text, { fontFamily: s.font || 'Arial', fontSize: ptToPx(s.size || 10), fill: s.color || '#000000', textAlign: s.align || 'center',
+        fontWeight: s.bold ? 'bold' : 'normal', fontStyle: s.italic ? 'italic' : 'normal', underline: !!s.underline, lineHeight: s.lead || 1.15, width: Math.max(10, W * tw - 2 * pad),
+        originX: 'center', originY: top ? 'top' : 'center', left: W * cx, top: top ? pad : H * cy, objectCaching: false });
+      parts.push(text);
+    }
+    if (s.shadow) { const visible = line || (s.fill && s.fill !== 'rgba(0,0,0,0)') || s.stroke; (visible || !text ? path : text).set('shadow', shadowOf(s.shadow)); }
+    return new fabric.Group(parts, { originX: 'center', originY: 'center', kind: 'shape', shape: s, objectCaching: false });
+  }
+  const defaultTextBox = (o = {}) => ({ type: 'rect', w: fitW(40), h: fitH(16), fill: null, stroke: '#000000', sw: 0.3, round: 0, text: 'Type in the box on the right. Words wrap inside the box.', font: 'Arial', size: 9, color: '#000000', align: 'left', valign: 'top', pad: 1.2, ...o });
+
   function swapObject(old, neu) {
     const c = old.getCenterPoint();
     neu.set({ angle: old.angle, opacity: old.opacity ?? 1 });
+    if (old.shadow && !neu.shadow && neu.kind !== 'shape') neu.set('shadow', old.shadow);
     neu.setPositionByOrigin(c, 'center', 'center');
     const idx = canvas.getObjects().indexOf(old);
     quiet(() => { canvas.remove(old); canvas.insertAt(neu, idx); });
@@ -1722,6 +1785,11 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     const g = buildBarcode({ type: 'QR', value: 'https://example.com', ecc: 'M', wmm: Math.min(label.w, label.h) * 0.6 });
     g.set(centre()); add(g);
   }
+  function addShape(type) {
+    const s = Math.min(fitW(30), fitH(30) * 1.2), wide = ['rect', 'rounded', 'arrow'].includes(type);
+    add(buildShape({ type: type === 'rounded' ? 'rect' : type, round: type === 'rounded' ? 30 : 0, w: type === 'line' ? fitW(40) : wide ? s * 1.4 : s, h: type === 'line' ? 0 : wide ? s * 0.7 : s, fill: null, stroke: '#000000', sw: type === 'line' ? 0.5 : 0.4 }).set(base()));
+  }
+  function addTextBox() { add(buildShape(defaultTextBox()).set(base())); setTimeout(() => { const t = $('sh-text'); if (t) { $('right').classList.add('open'); t.focus(); t.select(); } }, 60); }
   function addRect() { add(new fabric.Rect({ ...base(), kind: 'rect', width: px(fitW(30)), height: px(fitH(12)), fill: 'rgba(0,0,0,0)', stroke: '#000000', strokeWidth: px(0.4), strokeUniform: true, rx: px(1), ry: px(1) })); }
   function addEllipse() { add(new fabric.Ellipse({ ...base(), kind: 'ellipse', rx: px(fitW(20)) / 2, ry: px(fitH(12)) / 2, fill: 'rgba(0,0,0,0)', stroke: '#000000', strokeWidth: px(0.4), strokeUniform: true })); }
   function addLine() { const l = px(fitW(40)); add(new fabric.Line([0, 0, l, 0], { ...base(), kind: 'line', stroke: '#000000', strokeWidth: px(0.4), strokeUniform: true })); }
@@ -1838,6 +1906,11 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
       showProps();
       return;
     }
+    if (o.kind === 'shape' && (Math.abs(o.scaleX - 1) > 0.001 || Math.abs(o.scaleY - 1) > 0.001)) {
+      const sh = o.shape;
+      swapObject(o, buildShape({ ...sh, w: sh.w * o.scaleX, h: sh.type === 'line' ? sh.h : sh.h * o.scaleY }));
+      showProps(); return;
+    }
     if (o.kind === 'table' && (Math.abs(o.scaleX - 1) > 0.001 || Math.abs(o.scaleY - 1) > 0.001)) {
       const t = o.tb;
       swapObject(o, buildTable({ ...t, colW: t.colW.map((v) => v * o.scaleX), rowH: t.rowH.map((v) => v * o.scaleY) }));
@@ -1887,7 +1960,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     const o = active();
     $('p-none').hidden = !!o;
     $('p-obj').hidden = !o;
-    ['p-text', 'p-barcode', 'p-qr', 'p-shape', 'p-image', 'p-table', 'p-arc'].forEach((id) => { $(id).hidden = true; });
+    ['p-text', 'p-barcode', 'p-qr', 'p-shape', 'p-image', 'p-table', 'p-arc', 'p-shape2', 'p-shadow'].forEach((id) => { $(id).hidden = true; });
     document.querySelectorAll('[data-rot], #rot-cw, #rot-ccw, #rot-180').forEach((b) => { b.disabled = !o; });
     if (!o) {
       $('props-title').textContent = 'Label';
@@ -1911,7 +1984,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     }
     const multi = o.type === 'activeSelection';
     const k = multi ? 'multi' : kindOf(o);
-    $('props-title').textContent = { multi: multi ? `${o.size()} items` : '', text: 'Text', barcode: TWO_D[o.bc?.type] || 'Barcode', table: 'Table', arc: 'Curved text', rect: 'Box', ellipse: 'Ellipse', line: 'Line', image: 'Image' }[k] || 'Item';
+    $('props-title').textContent = { multi: multi ? `${o.size()} items` : '', text: 'Text', barcode: TWO_D[o.bc?.type] || 'Barcode', table: 'Table', arc: 'Curved text', shape: o.shape?.type === 'line' ? 'Line' : o.shape?.text ? 'Text box' : 'Shape', rect: 'Box', ellipse: 'Ellipse', line: 'Line', image: 'Image' }[k] || 'Item';
     $('unit-note').textContent = `(${unit})`;
     const r = o.getBoundingRect(true, true);
     $('p-x').value = toUnit(mmOf(r.left));
@@ -1966,6 +2039,70 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
       $('p-image').hidden = false;
       $('i-bw').checked = !!(o.filters && o.filters.length);
     }
+    if (k === 'shape') renderShapeProps(o);
+    else if (!multi && k !== 'arc') renderShadowProps(o);
+  }
+  // Shapes and text boxes: shape, corners, fill, border, words inside, padding and drop shadow.
+  function renderShapeProps(o) {
+    const s = o.shape, line = s.type === 'line', box = s.type === 'rect', el = $('p-shape2');
+    const typing = document.activeElement && document.activeElement.id === 'sh-text' ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
+    const opt = (list, v) => list.map(([a, b]) => `<option value="${a}" ${String(a) === String(v) ? 'selected' : ''}>${b}</option>`).join('');
+    const hex = (c, d) => (/^#[0-9a-f]{6}$/i.test(c || '') ? c : d);
+    el.hidden = false;
+    el.innerHTML = `<h3>${line ? 'Line' : box && s.text ? 'Text box' : 'Shape'}</h3>
+      <label class="field"><span>Shape</span><select class="input" id="sh-type">${opt(SHAPES, s.type)}</select></label>
+      ${s.type === 'ellipse' ? '' : `<label class="field"><span>${line ? 'Ends: square to round' : 'Corners: sharp to round'}: <b id="sh-round-v">${s.round ? s.round + '%' : 'sharp'}</b></span><input type="range" id="sh-round" min="0" max="100" value="${s.round || 0}"></label>`}
+      ${s.type === 'star' ? `<label class="field"><span>Star points</span><input class="input" type="number" id="sh-points" min="3" max="24" value="${s.points || 5}"></label>` : ''}
+      ${line ? '' : `<div class="row"><label class="field"><span>Fill</span><input class="input" type="color" id="sh-fill" value="${hex(s.fill, '#ffffff')}"></label><label class="check" style="align-self:end"><input type="checkbox" id="sh-nofill" ${s.fill ? '' : 'checked'}> No fill</label></div>`}
+      <div class="row"><label class="field"><span>${line ? 'Colour' : 'Border'}</span><input class="input" type="color" id="sh-stroke" value="${hex(s.stroke, '#000000')}"></label><label class="field"><span>${line ? 'Thickness (mm)' : 'Border width (mm)'}</span><input class="input" type="number" id="sh-sw" min="0" step="0.1" value="${s.stroke || line ? s.sw : 0}"></label></div>
+      <label class="check"><input type="checkbox" id="sh-dash" ${s.dash ? 'checked' : ''}> ${line ? 'Dashed' : 'Dashed border'}</label>
+      ${line ? '' : `<h3>Words inside</h3>
+      <textarea class="input" id="sh-text" rows="3" aria-label="Words inside the shape">${(s.text || '').replace(/</g, '&lt;')}</textarea>
+      <label class="field"><span>Font</span><select class="input" id="sh-font">${opt(FONTS.map((f) => [f, f]), s.font || 'Arial')}</select></label>
+      <div class="row"><label class="field"><span>Size (pt)</span><input class="input" type="number" id="sh-size" min="3" step="0.5" value="${s.size || 10}"></label><label class="field"><span>Colour</span><input class="input" type="color" id="sh-color" value="${hex(s.color, '#000000')}"></label></div>
+      <div class="seg" role="group" aria-label="Style and alignment"><button class="btn" data-sh="bold" aria-pressed="${!!s.bold}" title="Bold"><b>B</b></button><button class="btn" data-sh="italic" aria-pressed="${!!s.italic}" title="Italic"><i>I</i></button><button class="btn" data-sh="underline" aria-pressed="${!!s.underline}" title="Underline"><u>U</u></button>${[['left', 'Left'], ['center', 'Centre'], ['right', 'Right'], ['justify', 'Justify']].map(([v, n]) => `<button class="btn" data-sha="${v}" aria-pressed="${(s.align || 'center') === v}">${n}</button>`).join('')}</div>
+      ${box ? `<div class="seg" role="group" aria-label="Up and down"><button class="btn" data-shv="top" aria-pressed="${s.valign === 'top'}">Top</button><button class="btn" data-shv="middle" aria-pressed="${s.valign !== 'top'}">Middle</button></div>` : ''}
+      <div class="row"><label class="field"><span>Padding (mm)</span><input class="input" type="number" id="sh-pad" min="0" step="0.2" value="${s.pad ?? 1}"></label><label class="field"><span>Line spacing</span><input class="input" type="number" id="sh-lead" min="0.8" step="0.05" value="${s.lead || 1.15}"></label></div>
+      ${box ? '<button class="btn outline" id="sh-fit">Fit the box to the words</button>' : ''}`}
+      <h3>Drop shadow</h3>
+      <label class="check"><input type="checkbox" id="sh-shadow" ${s.shadow ? 'checked' : ''}> Drop shadow</label>
+      ${s.shadow ? `<div class="row"><label class="field"><span>Softness: <b>${s.shadow.blur ?? 0.8} mm</b></span><input type="range" id="sh-sblur" min="0" max="4" step="0.1" value="${s.shadow.blur ?? 0.8}"></label><label class="field"><span>Distance: <b>${s.shadow.x ?? 0.5} mm</b></span><input type="range" id="sh-sdist" min="0" max="3" step="0.1" value="${s.shadow.x ?? 0.5}"></label></div>` : ''}`;
+    const re = (patch) => { swapObject(o, buildShape({ ...s, ...patch })); showProps(); };
+    const on = (id, ev, fn) => { const x = $(id); if (x) x[ev] = fn; };
+    on('sh-type', 'onchange', (e) => re({ type: e.target.value, h: e.target.value === 'line' ? 0 : s.h || s.w * 0.6 }));
+    on('sh-round', 'oninput', (e) => { $('sh-round-v').textContent = +e.target.value ? e.target.value + '%' : 'sharp'; });
+    on('sh-round', 'onchange', (e) => re({ round: +e.target.value }));
+    on('sh-points', 'onchange', (e) => re({ points: Math.max(3, Math.min(24, +e.target.value || 5)) }));
+    on('sh-fill', 'onchange', (e) => re({ fill: e.target.value }));
+    on('sh-nofill', 'onchange', (e) => re({ fill: e.target.checked ? null : '#ffffff' }));
+    on('sh-stroke', 'onchange', (e) => re({ stroke: e.target.value, sw: s.sw || 0.4 }));
+    on('sh-sw', 'onchange', (e) => { const v = +e.target.value; re(v ? { sw: v, stroke: s.stroke || '#000000' } : { stroke: null }); });
+    on('sh-dash', 'onchange', (e) => re({ dash: e.target.checked }));
+    on('sh-text', 'onchange', (e) => re({ text: e.target.value }));
+    on('sh-font', 'onchange', (e) => { const f = e.target.value; ensureFont(f).then(() => re({ font: f })); });
+    on('sh-size', 'onchange', (e) => re({ size: Math.max(3, +e.target.value || 10) }));
+    on('sh-color', 'onchange', (e) => re({ color: e.target.value }));
+    on('sh-pad', 'onchange', (e) => re({ pad: Math.max(0, +e.target.value || 0) }));
+    on('sh-lead', 'onchange', (e) => re({ lead: Math.max(0.8, +e.target.value || 1.15) }));
+    on('sh-fit', 'onclick', () => { const t = o.getObjects().find((x) => x.type === 'textbox'); if (t) re({ h: mmOf(t.height) + 2 * (s.pad ?? 1) + 0.5 }); });
+    on('sh-shadow', 'onchange', (e) => re({ shadow: e.target.checked ? { color: 'rgba(0,0,0,0.35)', blur: 0.8, x: 0.5, y: 0.5 } : null }));
+    on('sh-sblur', 'onchange', (e) => re({ shadow: { ...s.shadow, blur: +e.target.value } }));
+    on('sh-sdist', 'onchange', (e) => re({ shadow: { ...s.shadow, x: +e.target.value, y: +e.target.value } }));
+    el.querySelectorAll('[data-sh]').forEach((b) => { b.onclick = () => re({ [b.dataset.sh]: !s[b.dataset.sh] }); });
+    el.querySelectorAll('[data-sha]').forEach((b) => { b.onclick = () => re({ align: b.dataset.sha }); });
+    el.querySelectorAll('[data-shv]').forEach((b) => { b.onclick = () => re({ valign: b.dataset.shv }); });
+    if (typing && $('sh-text')) { $('sh-text').focus(); $('sh-text').setSelectionRange(typing[0], typing[1]); }
+  }
+  // A drop shadow for any other item (text, codes, tables, pictures).
+  function renderShadowProps(o) {
+    const el = $('p-shadow'), sh = o.shadow;
+    el.hidden = false;
+    el.innerHTML = `<h3>Drop shadow</h3><label class="check"><input type="checkbox" id="ds-on" ${sh ? 'checked' : ''}> Drop shadow</label>
+      ${sh ? `<div class="row"><label class="field"><span>Softness: <b>${(+mmOf(sh.blur || 0)).toFixed(1)} mm</b></span><input type="range" id="ds-blur" min="0" max="4" step="0.1" value="${(+mmOf(sh.blur || 0)).toFixed(1)}"></label><label class="field"><span>Distance: <b>${(+mmOf(sh.offsetX || 0)).toFixed(1)} mm</b></span><input type="range" id="ds-dist" min="0" max="3" step="0.1" value="${(+mmOf(sh.offsetX || 0)).toFixed(1)}"></label></div>` : ''}`;
+    const done = () => { o.dirty = true; canvas.requestRenderAll(); pushHistory(); showProps(); };
+    $('ds-on').onchange = (e) => { o.set('shadow', e.target.checked ? shadowOf({}) : null); done(); };
+    if ($('ds-blur')) $('ds-blur').onchange = (e) => { o.shadow.blur = px(+e.target.value); done(); };
+    if ($('ds-dist')) $('ds-dist').onchange = (e) => { o.shadow.offsetX = o.shadow.offsetY = px(+e.target.value); done(); };
   }
   ['selection:created', 'selection:updated', 'selection:cleared', 'object:moving', 'object:scaling', 'object:rotating', 'text:changed'].forEach((ev) => canvas.on(ev, showProps));
 
@@ -2297,6 +2434,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   $('a-straight').onclick = straighten;
   $('t-curve-up').onclick = () => curveText('up');
   $('t-curve-down').onclick = () => curveText('down');
+  canvas.on('mouse:dblclick', (e) => { if (e.target && e.target.kind === 'shape' && $('sh-text')) { $('right').classList.add('open'); $('sh-text').focus(); } });
   canvas.on('mouse:dblclick', (e) => { if (e.target && e.target.kind === 'arc') { $('right').classList.add('open'); $('a-text').focus(); $('a-text').select(); } });
 
   // ---- Tables
@@ -2964,9 +3102,19 @@ ${shape}${bwOpen}`);
       { label: 'Table', run: addTable },
       { label: 'Curved text', run: () => { canvas.discardActiveObject(); curveText('up'); } },
       '-',
-      { label: 'Box', run: addRect },
-      { label: 'Ellipse', run: addEllipse },
-      { label: 'Line', run: addLine },
+      { label: 'Text box', run: addTextBox },
+      { heading: 'Shapes' },
+      { label: 'Box', run: () => addShape('rect') },
+      { label: 'Rounded box', run: () => addShape('rounded') },
+      { label: 'Circle', run: () => addShape('ellipse') },
+      { label: 'Triangle', run: () => addShape('triangle') },
+      { label: 'Diamond', run: () => addShape('diamond') },
+      { label: 'Pentagon', run: () => addShape('pentagon') },
+      { label: 'Hexagon', run: () => addShape('hexagon') },
+      { label: 'Octagon', run: () => addShape('octagon') },
+      { label: 'Star shape', run: () => addShape('star') },
+      { label: 'Arrow', run: () => addShape('arrow') },
+      { label: 'Line', run: () => addShape('line') },
       { label: 'Image or logo…', run: () => imageInput.click() },
     ]],
     ['Format', [
@@ -3090,7 +3238,7 @@ ${shape}${bwOpen}`);
   // Toolbar, drawers, keyboard
   // =====================================================================
   $('add-text').onclick = addText; $('add-barcode').onclick = addBarcode; $('add-qr').onclick = addQR;
-  $('add-rect').onclick = addRect; $('add-ellipse').onclick = addEllipse; $('add-line').onclick = addLine;
+  $('add-rect').onclick = () => addShape('rect'); $('add-ellipse').onclick = () => addShape('ellipse'); $('add-line').onclick = () => addShape('line');
   $('add-image').onclick = () => imageInput.click();
   $('rot-cw').onclick = () => rotateBy(90); $('rot-ccw').onclick = () => rotateBy(-90); $('rot-180').onclick = () => rotateBy(180);
   $('zoom-in').onclick = () => { autoFit = false; setZoom(zoom * 1.25); };
@@ -3266,6 +3414,7 @@ ${shape}${bwOpen}`);
       (v) => { const now = new Date(); insertText(v === 'date' ? now.toLocaleDateString() : v === 'time' ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : v); });
     function invertText() { const o = T(); if (!o) return; $('t-invert').checked = !o.invert; $('t-invert').onchange(); }
     const G = (t, css = '') => `<text x="12" y="17.5" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="currentColor" stroke="none" style="${css}">${t}</text>`;
+    const SH = { rect: '<path d="M0 0L18 0L18 16L0 16Z" transform="translate(3 4)"/>', rounded: '<path d="M0 2.4Q0 0 2.4 0L15.6 0Q18 0 18 2.4L18 13.6Q18 16 15.6 16L2.4 16Q0 16 0 13.6Z" transform="translate(3 4)"/>', ellipse: '<path d="M0 8A9 8 0 1 0 18 8A9 8 0 1 0 0 8Z" transform="translate(3 4)"/>', triangle: '<path d="M9 0L18 16L0 16Z" transform="translate(3 4)"/>', diamond: '<path d="M9 0L18 8L9 16L0 8Z" transform="translate(3 4)"/>', pentagon: '<path d="M9 0L17.56 5.53L14.29 14.47L3.71 14.47L0.44 5.53Z" transform="translate(3 4)"/>', hexagon: '<path d="M18 8L13.5 14.93L4.5 14.93L0 8L4.5 1.07L13.5 1.07Z" transform="translate(3 4)"/>', octagon: '<path d="M12.44 0.61L17.31 4.94L17.31 11.06L12.44 15.39L5.56 15.39L0.69 11.06L0.69 4.94L5.56 0.61Z" transform="translate(3 4)"/>', star: '<path d="M9 0L11.38 5.09L17.56 5.53L12.85 9.11L14.29 14.47L9 11.6L3.71 14.47L5.15 9.11L0.44 5.53L6.62 5.09Z" transform="translate(3 4)"/>', arrow: '<path d="M0 4.8L10.8 4.8L10.8 0L18 8L10.8 16L10.8 11.2L0 11.2Z" transform="translate(3 4)"/>' };
     const IC = {
       bold: G('B', 'font-weight:800;font-size:17px'),
       italic: '<path d="M10 5h6M8 19h6M14 5l-4 14"/>',
@@ -3320,7 +3469,10 @@ ${shape}${bwOpen}`);
             C('PDF417 barcode', 'PDF417', PDF_ICON, { big: true, title: 'PDF417: lots of data in a small space (ID cards, shipping, boarding passes)' }),
             { col: [C('Data Matrix code', 'Data Matrix', I.qr), C('Aztec code', 'Aztec', I.qr), C('Micro PDF417 code', 'Micro PDF417', PDF_ICON)] }]],
           ['Tables', [C('Table', 'Table', I.table, { big: true, title: 'A grid of cells with text' })]],
-          ['Shapes', [B('Box', I.box, click('add-rect'), { big: true }), B('Ellipse', I.ellipse, click('add-ellipse'), { big: true }), B('Line', I.line, click('add-line'), { big: true })]],
+          ['Text box', [C('Text box', 'Text box', '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M7 9h10M7 12.5h10M7 16h6" class="fill"/>', { big: true, title: 'Words in a box that wrap, with a border, background, padding and shadow' })]],
+          ['Shapes', [{ col: [
+            { row: [C('Box', 'Box', SH.rect, { iconOnly: true }), C('Rounded box', 'Rounded box', SH.rounded, { iconOnly: true }), C('Circle', 'Circle', SH.ellipse, { iconOnly: true }), C('Triangle', 'Triangle', SH.triangle, { iconOnly: true }), C('Diamond', 'Diamond', SH.diamond, { iconOnly: true })] },
+            { row: [C('Pentagon', 'Pentagon', SH.pentagon, { iconOnly: true }), C('Hexagon', 'Hexagon', SH.hexagon, { iconOnly: true }), C('Octagon', 'Octagon', SH.octagon, { iconOnly: true }), C('Star shape', 'Star', SH.star, { iconOnly: true }), C('Arrow', 'Arrow', SH.arrow, { iconOnly: true }), C('Line', 'Line', I.line, { iconOnly: true })] }] }]],
           ['Pictures', [B('Image or logo', I.picture, click('add-image'), { big: true })]],
         ] },
         { id: 'text', label: 'Text', hue: '#2f6fdd', groups: [
