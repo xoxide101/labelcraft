@@ -19,6 +19,14 @@ How LabelCraft is built and what to keep in mind when changing it. For what it d
 - **Stock catalogue** (`STOCK`): about 70 sizes covering Dymo LabelWriter, Dymo D1 tape, Brother DK, Brother TZe, Zebra/thermal, and Avery US Letter and A4. Shapes: rounded or square corners, round/oval, or continuous tape with a length.
 - **Export:** PNG, JPG or SVG at 203, 300 or 600 DPI. 203 and 300 match most thermal label printers.
 
+## Title bar
+
+The Office-style strip at the very top is the shared `CraftTitlebar` component, pasted into `labelcraft.src.html` as its own `<script>` (so the single-file build keeps working).
+
+- **Quick buttons:** save, undo, redo, export, print.
+- **Info chips:** label stock and size.
+- **Search:** Alt+Q searches every menu command.
+
 ## Decisions
 
 - **"Turn label 90°" turns the whole label,** content and all. Rotating an object only turns that object.
