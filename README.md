@@ -1,3 +1,5 @@
+<img src="docs/logo.svg" width="64" height="64" alt="LabelCraft logo">
+
 # LabelCraft
 
 **A label maker that runs in your browser: Dymo, Brother, Zebra and Avery labels with barcodes and QR codes.**
@@ -14,6 +16,14 @@ Pick your label stock, add text, barcodes, QR codes, shapes and logos, rotate th
 4. Add text, a barcode or a QR code from the toolbar, then **File › Print** or **Export**.
 
 Your label also autosaves in the browser.
+
+## Finding your way
+
+| Where | What is there |
+| --- | --- |
+| **LabelCraft logo** (top left) | Every command in classic menus: File, Edit, Insert, View, Help (also F10) |
+| **Top bar** | Quick buttons (save, undo, redo, export, print; customize them with ⌄), the label name, **Search commands (Alt+Q)**, label stock and size, theme, help |
+| **Ribbon tabs** | **Home** (clipboard, label), **Insert** (text, barcode, QR code, shapes, image), **Arrange** (rotate, order), **View** (zoom, guides, units, theme), **Output** (export, print, save) |
 
 ## What it does
 
