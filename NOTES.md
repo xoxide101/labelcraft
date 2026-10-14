@@ -82,3 +82,5 @@ The Office-style strip at the very top is the shared `CraftTitlebar` component, 
 **2026-10-14:** Rotation angle box for curved text; shapes, text boxes, drop shadow and opacity.
 
 **2026-10-14:** Shapes can be 3-D in three colours (face = fill, side = `side`, edge = border) and have one border line or three (`lines`: outer, middle, inner; a middle line with no colour leaves a gap). `shapeLayers()` lists what to draw, back to front; it is the same code in each Craft app.
+
+**2026-10-14:** Dingbats (`DINGBATS`, `DINGBAT_FONT`) and colour fills for see-through pictures (`FILL_MODES`: original, solid, tint, gradient, picture). Pictures are recoloured on a canvas (`recolorCanvas`, original kept in `origSrc`, model in `fx`).

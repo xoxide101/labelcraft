@@ -566,6 +566,12 @@ input[type="color"].input { padding: 2px; height: 30px; }
         <div class="sec" id="p-image" hidden>
           <h3>Image</h3>
           <label class="check"><input type="checkbox" id="i-bw"> Black and white (for thermal printers)</label>
+          <h3>Colour fill (icons and see-through pictures)</h3>
+          <div class="seg" role="group" aria-label="Colour fill" id="i-fx"></div>
+          <div class="row" id="i-fx-cols"><label class="field"><span id="i-c1-l">Colour</span><input class="input" type="color" id="i-c1" value="#000000"></label><label class="field" id="i-c2-f"><span>To</span><input class="input" type="color" id="i-c2" value="#3f8be8"></label></div>
+          <label class="field" id="i-angle-f"><span>Gradient angle: <b id="i-angle-v">90°</b></span><input type="range" id="i-angle" min="0" max="359" value="90"></label>
+          <label class="field" id="i-amount-f"><span>How strong: <b id="i-amount-v">60%</b></span><input type="range" id="i-amount" min="5" max="100" value="60"></label>
+          <div class="row"><button class="btn outline" id="i-pic">Choose a fill picture…</button><button class="btn outline" id="i-reset">Reset to the original</button></div>
         </div>
 
         <div class="sec">
@@ -1434,7 +1440,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // =====================================================================
   // Canvas
   // =====================================================================
-  const PROPS = ['kind', 'bc', 'invert', 'tb', 'arc', 'shape'];
+  const PROPS = ['kind', 'bc', 'invert', 'tb', 'arc', 'shape', 'fx', 'origSrc'];
   fabric.Object.prototype.set({
     transparentCorners: false, cornerColor: '#ffffff', cornerStrokeColor: '#c8322b', borderColor: '#c8322b',
     cornerStyle: 'circle', cornerSize: 10, borderScaleFactor: 1.5, padding: 0,
@@ -1515,6 +1521,45 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   const centre = () => ({ left: labelPx().w / 2, top: labelPx().h / 2 });
   const base = () => ({ ...centre(), originX: 'center', originY: 'center' });
 
+  // Dingbats: classic symbol characters in groups (the same set in every Craft app). They are text, so colour,
+  // size, shadow, outline, gradients and rotation all work on them. DINGBAT_FONT is a list of fonts that have them.
+  const DINGBAT_FONT = "'Segoe UI Symbol', 'Noto Sans Symbols 2', 'Noto Sans Symbols', 'Apple Symbols', 'DejaVu Sans', 'Arial Unicode MS', sans-serif";
+  const DINGBATS = [
+    ['Arrows', '← → ↑ ↓ ↔ ↕ ↖ ↗ ↘ ↙ ⇐ ⇒ ⇑ ⇓ ⇔ ➔ ➜ ➙ ➛ ➝ ➞ ➟ ➠ ➡ ➢ ➣ ➤ ➥ ➦ ➧ ➨ ➩ ➪ ➫ ➬ ➭ ➮ ➯ ➱ ➲ ➳ ➵ ➸ ➺ ➻ ➼ ➽ ➾ ↩ ↪ ↺ ↻ ⟲ ⟳'],
+    ['Checks and crosses', '✓ ✔ ✗ ✘ ☐ ☑ ☒ ✕ ✖ ✚ ✛ ✜ ✙ ✠ ✟ ✞ ✝'],
+    ['Stars and flowers', '★ ☆ ✦ ✧ ✩ ✪ ✫ ✬ ✭ ✮ ✯ ✰ ✱ ✲ ✳ ✴ ✵ ✶ ✷ ✸ ✹ ✺ ✻ ✼ ✽ ✾ ✿ ❀ ❁ ❂ ❃ ❄ ❅ ❆ ❇ ❈ ❉ ❊ ❋ ❖ ⁂ ※'],
+    ['Hands and faces', '☚ ☛ ☜ ☝ ☞ ☟ ✌ ✍ ☺ ☻ ☹ ☠'],
+    ['Shapes', '● ○ ◉ ◎ ◐ ◑ ◒ ◓ ■ □ ▪ ▫ ▬ ▭ ▮ ▯ ◆ ◇ ◈ ◊ ▲ △ ▼ ▽ ◀ ▶ ◢ ◣ ◤ ◥ ❍ ❏ ❐ ❑ ❒ ⬟ ⬢ ⬣ ⬤ ⬛ ⬜'],
+    ['Hearts and cards', '♥ ♡ ❤ ❥ ❦ ❧ ❣ ♠ ♣ ♦ ♤ ♧ ♢'],
+    ['Weather and nature', '☀ ☁ ☂ ☃ ☄ ☾ ☽ ❄ ⚡ ☘ ⚘ ☔ ☼ ☇ ☈'],
+    ['Office and signs', '✂ ✃ ✄ ✆ ✇ ✈ ✉ ✎ ✏ ✐ ✑ ✒ ☎ ☏ ⌚ ⌛ ⚑ ⚐ ⚠ ♻ ⚙ ⚖ ⚓ ☕ ♿ ⚕ ⚛ ☮ ☯ ☸ ⚜ ☢ ☣ ⌘ ⌨ ✉'],
+    ['Music and games', '♩ ♪ ♫ ♬ ♭ ♮ ♯ ⚀ ⚁ ⚂ ⚃ ⚄ ⚅ ♔ ♕ ♖ ♗ ♘ ♙ ♚ ♛ ♜ ♝ ♞ ♟'],
+    ['Ornaments and quotes', '❛ ❜ ❝ ❞ ❨ ❩ ❪ ❫ ❬ ❭ ❮ ❯ ❰ ❱ ❲ ❳ ❴ ❵ ❡ ❢ § ¶ † ‡ • ‣ ◦ ⁃ ⁌ ⁍ ☙ ❦ ⸙'],
+    ['Numbers', '① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ❶ ❷ ❸ ❹ ❺ ❻ ❼ ❽ ❾ ❿ ➀ ➁ ➂ ➃ ➄ ➅ ➆ ➇ ➈ ➉ ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑ ➒ ➓'],
+  ].map(([name, chars]) => [name, chars.split(/\s+/).filter(Boolean)]);
+  // Colour fills for icons, pictures and text: the original, one solid colour (keeps transparency), a tint over the
+  // original, a two-colour gradient at an angle, or a picture inside the shape. Works on any picture with a see-through background.
+  const FILL_MODES = [['original', 'Original'], ['solid', 'One colour'], ['tint', 'Tint over it'], ['gradient', 'Gradient'], ['picture', 'Picture fill']];
+  function recolorCanvas(img, f, pattern) {
+    const c = document.createElement('canvas'); c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height;
+    const x = c.getContext('2d');
+    x.drawImage(img, 0, 0, c.width, c.height);
+    if (!f || f.mode === 'original') return c;
+    if (f.mode === 'tint') { x.globalCompositeOperation = 'source-atop'; x.globalAlpha = f.amount ?? 0.6; x.fillStyle = f.c1 || '#e8483f'; x.fillRect(0, 0, c.width, c.height); return c; }
+    x.globalCompositeOperation = 'source-in';
+    if (f.mode === 'gradient') {
+      const a = ((f.angle ?? 90) * Math.PI) / 180, cx = c.width / 2, cy = c.height / 2, r = Math.hypot(c.width, c.height) / 2;
+      const g = x.createLinearGradient(cx - Math.sin(a) * r, cy + Math.cos(a) * r, cx + Math.sin(a) * r, cy - Math.cos(a) * r);
+      g.addColorStop(0, f.c1 || '#e8483f'); g.addColorStop(1, f.c2 || '#3f8be8'); x.fillStyle = g;
+    } else if (f.mode === 'picture' && pattern) {
+      const k = Math.max(c.width / pattern.width, c.height / pattern.height);
+      x.drawImage(pattern, (c.width - pattern.width * k) / 2, (c.height - pattern.height * k) / 2, pattern.width * k, pattern.height * k); return c;
+    } else x.fillStyle = f.c1 || '#222222';
+    x.fillRect(0, 0, c.width, c.height);
+    return c;
+  }
+  const loadImg = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  function addDingbat(ch) { add(makeText(ch, { fontFamily: DINGBAT_FONT, fontSize: ptToPx(Math.max(10, Math.min(48, pxToPt(px(label.h)) * 0.6))) })); }
   function makeText(text, opts = {}) {
     return new fabric.IText(text, {
       ...base(), kind: 'text', fontFamily: 'Arial', fontSize: ptToPx(12), fill: '#000000',
@@ -2074,6 +2119,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     } else if (k === 'image') {
       $('p-image').hidden = false;
       $('i-bw').checked = !!(o.filters && o.filters.length);
+      showFill(o);
     }
     if (k === 'shape') renderShapeProps(o);
     else if (!multi && k !== 'arc') renderShadowProps(o);
@@ -2585,6 +2631,39 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     o.filters = $('i-bw').checked ? [new fabric.Image.filters.Grayscale(), new fabric.Image.filters.Contrast({ contrast: 0.35 })] : [];
     o.applyFilters(); modified(o);
   };
+
+  // Colour fill for pictures with a see-through background: one colour, a tint, a gradient or a picture inside.
+  async function fillPicture(o, f) {
+    if (!o.origSrc) o.origSrc = o.getSrc();
+    const [img, pat] = await Promise.all([loadImg(o.origSrc), f.mode === 'picture' && f.src ? loadImg(f.src) : null]);
+    const out = recolorCanvas(img, f, pat), filters = o.filters || [];
+    await new Promise((res) => o.setSrc(out.toDataURL('image/png'), res));
+    o.fx = f.mode === 'original' ? null : { ...f };
+    if (filters.length) { o.filters = filters; o.applyFilters(); }
+    o.dirty = true; canvas.requestRenderAll(); pushHistory(); showProps();
+  }
+  const curFx = (o) => o.fx || { mode: 'original', c1: '#000000', c2: '#3f8be8', angle: 90, amount: 0.6 };
+  function showFill(o) {
+    const f = curFx(o);
+    $('i-fx').innerHTML = FILL_MODES.map(([v, n]) => `<button class="btn" data-fx="${v}" aria-pressed="${f.mode === v}">${n}</button>`).join('');
+    $('i-fx-cols').hidden = !['solid', 'tint', 'gradient'].includes(f.mode);
+    $('i-c1-l').textContent = f.mode === 'gradient' ? 'From' : 'Colour'; $('i-c1').value = f.c1 || '#000000';
+    $('i-c2-f').hidden = f.mode !== 'gradient'; $('i-c2').value = f.c2 || '#3f8be8';
+    $('i-angle-f').hidden = f.mode !== 'gradient'; $('i-angle').value = f.angle ?? 90; $('i-angle-v').textContent = (f.angle ?? 90) + '°';
+    $('i-amount-f').hidden = f.mode !== 'tint'; $('i-amount').value = Math.round((f.amount ?? 0.6) * 100); $('i-amount-v').textContent = Math.round((f.amount ?? 0.6) * 100) + '%';
+    $('i-pic').hidden = f.mode !== 'picture'; $('i-reset').hidden = !o.fx;
+  }
+  const pickPicture = () => new Promise((res) => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = () => { const f = i.files[0]; if (!f) return res(null); const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); }; i.click(); });
+  const fxApply = (patch) => { const o = active(); if (!o || o.type !== 'image') return; fillPicture(o, { ...curFx(o), ...patch }); };
+  $('i-fx').onclick = async (e) => { const b = e.target.closest('[data-fx]'); if (!b) return; const o = active(); if (b.dataset.fx === 'picture' && !curFx(o).src) { const src = await pickPicture(); if (src) fxApply({ mode: 'picture', src }); } else fxApply({ mode: b.dataset.fx }); };
+  $('i-c1').onchange = () => fxApply({ c1: $('i-c1').value });
+  $('i-c2').onchange = () => fxApply({ c2: $('i-c2').value });
+  $('i-angle').oninput = () => { $('i-angle-v').textContent = $('i-angle').value + '°'; };
+  $('i-angle').onchange = () => fxApply({ angle: +$('i-angle').value });
+  $('i-amount').oninput = () => { $('i-amount-v').textContent = $('i-amount').value + '%'; };
+  $('i-amount').onchange = () => fxApply({ amount: +$('i-amount').value / 100 });
+  $('i-pic').onclick = async () => { const src = await pickPicture(); if (src) fxApply({ mode: 'picture', src }); };
+  $('i-reset').onclick = () => fxApply({ mode: 'original' });
 
   // Opacity: works on one item or on everything selected.
   const setOpacity = (v) => { const o = active(); if (!o) return; (o.type === 'activeSelection' ? o.getObjects() : [o]).forEach((x) => x.set('opacity', v / 100)); $('o-op-v').textContent = v + '%'; canvas.requestRenderAll(); };
@@ -3454,6 +3533,22 @@ ${shape}${bwOpen}`);
       [['0.85', 'Tight (0.85)'], ['1', 'Single (1.0)'], ['1.15', '1.15'], ['1.5', '1.5'], ['2', 'Double (2.0)']], (v) => txt((o) => o.set('lineHeight', +v)));
     const SPACE_BTN = menuButton('Letter spacing', '<path d="M5 13 8 5l3 8M6 10.5h4M13 5l3 8 3-8M3 18h18M5 16l-2 2 2 2M19 16l2 2-2 2"/>',
       [['-60', 'Tight'], ['0', 'Normal'], ['100', 'Wide'], ['250', 'Wider'], ['500', 'Widest']], (v) => { if (A()) setArc({ spacing: +v }); else txt((o) => o.set('charSpacing', +v)); });
+    // Dingbats: a picker of symbol groups; a click puts the symbol on the label as text.
+    const DING_BTN = document.createElement('button');
+    DING_BTN.type = 'button'; DING_BTN.className = 'crb-big rb-color'; DING_BTN.title = 'Dingbats: symbols you can colour and size like text';
+    DING_BTN.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.2 5.6.6-4.2 3.8 1.2 5.6L12 15.4 7 18.2l1.2-5.6L4 8.8l5.6-.6z" class="fill"/></svg><span>Dingbats</span>';
+    DING_BTN.addEventListener('mousedown', (e) => e.preventDefault());
+    DING_BTN.onclick = () => {
+      if (pop) { closePop(); return; }
+      pop = document.createElement('div'); pop.className = 'rb-pop'; pop.style.width = '300px';
+      pop.innerHTML = `<h6>Dingbats</h6><select class="input" style="width:100%;margin-bottom:6px">${DINGBATS.map(([n], i) => `<option value="${i}">${n}</option>`).join('')}</select><div class="list" style="grid-template-columns:repeat(8,1fr)"></div>`;
+      const grid = pop.querySelector('.list'), sel = pop.querySelector('select');
+      const draw = () => { grid.innerHTML = DINGBATS[+sel.value][1].map((ch) => `<button type="button" data-v="${ch}" style="font-size:20px;text-align:center;font-family:${DINGBAT_FONT.replace(/"/g, '')}">${ch}</button>`).join(''); };
+      sel.onchange = draw; draw();
+      pop.onclick = (e) => { const x = e.target.closest('[data-v]'); if (x) { closePop(); addDingbat(x.dataset.v); } };
+      document.body.append(pop);
+      const r = DING_BTN.getBoundingClientRect(); pop.style.left = Math.max(8, Math.min(innerWidth - 310, r.left)) + 'px'; pop.style.top = (r.bottom + 4) + 'px';
+    };
     const SYMBOL_BTN = menuButton('Insert a symbol or the date', '<path d="M17 17.5A7 7 0 1 1 19 12v1.5a2 2 0 0 1-4 0V8"/><circle cx="12" cy="12" r="3"/>',
       [['date', 'Today’s date'], ['time', 'The time'], ...SYMBOLS.map((c) => [c, c])],
       (v) => { const now = new Date(); insertText(v === 'date' ? now.toLocaleDateString() : v === 'time' ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : v); });
@@ -3520,6 +3615,7 @@ ${shape}${bwOpen}`);
             C('PDF417 barcode', 'PDF417', PDF_ICON, { big: true, title: 'PDF417: lots of data in a small space (ID cards, shipping, boarding passes)' }),
             { col: [C('Data Matrix code', 'Data Matrix', I.qr), C('Aztec code', 'Aztec', I.qr), C('Micro PDF417 code', 'Micro PDF417', PDF_ICON)] }]],
           ['Tables', [C('Table', 'Table', I.table, { big: true, title: 'A grid of cells with text' })]],
+          ['Symbols', [{ el: DING_BTN }]],
           ['Text box', [C('Text box', 'Text box', '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M7 9h10M7 12.5h10M7 16h6" class="fill"/>', { big: true, title: 'Words in a box that wrap, with a border, background, padding and shadow' })]],
           ['Shapes', [{ col: [
             { row: [C('Box', 'Box', SH.rect, { iconOnly: true }), C('Rounded box', 'Rounded box', SH.rounded, { iconOnly: true }), C('Circle', 'Circle', SH.ellipse, { iconOnly: true }), C('Triangle', 'Triangle', SH.triangle, { iconOnly: true }), C('Diamond', 'Diamond', SH.diamond, { iconOnly: true })] },
