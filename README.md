@@ -121,6 +121,17 @@ This writes:
 
 Chrome or Edge (recent versions). Firefox and Safari work too, but download files instead of saving straight into a folder.
 
+## How this was made
+
+This app is **vibe coded**: its author designed and directed it in plain conversation, feature by feature, and an AI coding assistant (Claude, by Anthropic) wrote the code.
+
+It is a **genuine clean-room build**, not a decompiled or AI-rebuilt copy of anything:
+- Nothing was decompiled, disassembled or reverse-engineered, in whole or in part.
+- No code, artwork, fonts, icons or data files from any original program were used, and none were given to the AI to work from.
+- LabelCraft works the way people expect label software to work (like the label programs that come with Dymo, Brother and Zebra printers); only publicly known features and general ideas guided the design. Every line of code and every picture here was made new.
+
+Open-source libraries it uses are listed with their licences in Credits.
+
 ## Credits
 
 - [Fabric.js](http://fabricjs.com/) 5.3.1, [JsBarcode](https://github.com/lindell/JsBarcode) 3.11.6, [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 (all MIT)
