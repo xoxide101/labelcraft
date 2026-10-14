@@ -46,7 +46,7 @@ Your label also autosaves in the browser.
 
   ![Curved text on a CD label](docs/curved-text.png)
 
-- **Word-style Text tab**: font and size with bigger / smaller, colour buttons with a palette (text colour, highlight, outline colour), effects (shadow, outline, white on black), case, alignment, bullets, numbering, line spacing and letter spacing.
+- **Word-style Text tab** with Office-style icons (hover for names): font and size with bigger / smaller, colour buttons with a palette (text colour, highlight, outline colour), effects (shadow, outline, white on black), case, alignment, bullets, numbering, line spacing and letter spacing.
 - **Format just some words**: double-click the text on the label, select the words, then pick the formatting (Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+] and Ctrl+[ work too).
 - **Wrap text in a box** of a set width, **Fit to label** width, and insert today's date, the time or symbols (© ® ™ ° ± € ✓ ★ ⚠ …).
 - **Tables**: type into a grid in the side panel (double-click the table to start), add or delete rows and columns, heading row, font, size, alignment, grid lines, padding; resize by dragging and text shrinks to fit each cell.

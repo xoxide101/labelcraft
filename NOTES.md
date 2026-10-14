@@ -65,6 +65,7 @@ The Office-style strip at the very top is the shared `CraftTitlebar` component, 
 | 2026-10-13 | First version: stock catalogue, text, barcodes, QR codes, shapes, images, rotation, save/open, export |
 | 2026-10-13 | Fonts made offline (`fetch_fonts.py`, `fonts/`) |
 | 2026-10-14 | Ribbon, logo menu, customizable quick buttons |
+| 2026-10-14 | Text tab redone with Office-style icon-only buttons in two rows (shared ribbon now supports `row` and `iconOnly`) |
 | 2026-10-14 | v0.4: curved text (up / down around the label centre, drag in/out and around, spread), Word-style Text tab with colour palettes, effects, line and letter spacing |
 | 2026-10-14 | v0.3: word-processor text formatting (per-word styles, highlight, outline, case, lists, justify, wrap, fit), tables, PDF417 / Micro PDF417 / Data Matrix / Aztec (bwip-js) |
 | 2026-10-14 | CD/DVD disc labels with centre hole, spine strips, jewel case / booklet / tray card / DVD / slim DVD / Blu-ray inserts, fold lines, cut and fold marks |
