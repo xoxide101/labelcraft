@@ -19,9 +19,9 @@ How LabelCraft is built and what to keep in mind when changing it. For what it d
 - **Stock catalogue** (`STOCK`): about 70 sizes covering Dymo LabelWriter, Dymo D1 tape, Brother DK, Brother TZe, Zebra/thermal, and Avery US Letter and A4. Shapes: rounded or square corners, round/oval, or continuous tape with a length.
 - **Export:** PNG, JPG or SVG at 203, 300 or 600 DPI. 203 and 300 match most thermal label printers.
 
-## Title bar and ribbon (shared)
+## Title bar and ribbon (this app's own copy)
 
-All four Craft apps use the same `craft-titlebar.js` code: in SiteCraft and DataCraft as a file, pasted into the single-file apps (LabelCraft as its own `<script>`, ShiftCraft inside its main script, so the emailable copy keeps working). It provides:
+The title bar and ribbon code (`CraftTitlebar`, `CraftRibbon`, `CraftIcons`) started as one file shared by the Craft apps. **Each app now keeps its own copy and changes it on its own**: here it is its own <script> in labelcraft.src.html. Changes are not copied to the other apps, so the apps can be refined separately until it is clear how unified they should be. It provides:
 
 - **`CraftTitlebar`:**
   - logo button that opens every classic menu side by side (F10)
