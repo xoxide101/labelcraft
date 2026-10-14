@@ -561,6 +561,8 @@ input[type="color"].input { padding: 2px; height: 30px; }
         </div>
 
         <div class="sec">
+          <h3>Opacity</h3>
+          <label class="field"><span>How solid it is (lower to see through): <b id="o-op-v">100%</b></span><input type="range" id="o-op" min="0" max="100" step="1" value="100" aria-label="Opacity"></label>
           <h3>Arrange</h3>
           <div class="row">
             <button class="btn outline" id="o-front">Bring to front</button>
@@ -1608,6 +1610,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   }
   // Swap in a rebuilt object that already sits where it should (curved text).
   function replaceInPlace(old, neu, hist = true) {
+    if (old.opacity != null) neu.set('opacity', old.opacity);
     const idx = canvas.getObjects().indexOf(old);
     quiet(() => { canvas.remove(old); canvas.insertAt(neu, idx); });
     canvas.setActiveObject(neu);
@@ -1619,7 +1622,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // Put a rebuilt object where the old one was (same centre, angle and stacking order).
   function swapObject(old, neu) {
     const c = old.getCenterPoint();
-    neu.set({ angle: old.angle });
+    neu.set({ angle: old.angle, opacity: old.opacity ?? 1 });
     neu.setPositionByOrigin(c, 'center', 'center');
     const idx = canvas.getObjects().indexOf(old);
     quiet(() => { canvas.remove(old); canvas.insertAt(neu, idx); });
@@ -1673,7 +1676,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     let g;
     try { g = buildBarcode(bc); } catch (e) { return e.message; }
     const c = old.getCenterPoint();
-    g.set({ left: c.x, top: c.y, angle: old.angle });
+    g.set({ left: c.x, top: c.y, angle: old.angle, opacity: old.opacity ?? 1 });
     const idx = canvas.getObjects().indexOf(old);
     quiet(() => { canvas.remove(old); canvas.insertAt(g, idx); });
     canvas.setActiveObject(g);
@@ -1914,6 +1917,8 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     $('p-size-row').hidden = multi || k === 'text' || k === 'arc';
     $('p-h').disabled = k === 'line' || is2D(o.bc?.type);
     $('p-angle').value = Math.round(o.angle || 0);
+    const op = Math.round((multi ? o.getObjects()[0].opacity ?? 1 : o.opacity ?? 1) * 100);
+    $('o-op').value = op; $('o-op-v').textContent = op + '%';
     if (k === 'text') {
       $('p-text').hidden = false;
       if (document.activeElement !== $('t-content')) $('t-content').value = o.text;
@@ -2388,6 +2393,10 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     o.applyFilters(); modified(o);
   };
 
+  // Opacity: works on one item or on everything selected.
+  const setOpacity = (v) => { const o = active(); if (!o) return; (o.type === 'activeSelection' ? o.getObjects() : [o]).forEach((x) => x.set('opacity', v / 100)); $('o-op-v').textContent = v + '%'; canvas.requestRenderAll(); };
+  $('o-op').oninput = () => setOpacity(+$('o-op').value);
+  $('o-op').onchange = () => { setOpacity(+$('o-op').value); pushHistory(); };
   $('o-front').onclick = () => order(true);
   $('o-back').onclick = () => order(false);
   $('o-dup').onclick = duplicate;
