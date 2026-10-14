@@ -132,6 +132,12 @@ input[type="color"].input { padding: 2px; height: 30px; }
 .label-frame.tape::after { right: 0; }
 .safe-area { position: absolute; z-index: 3; pointer-events: none; border: 1px dashed rgba(200,50,43,.55); }
 .label-frame.round .safe-area { border-radius: 50%; }
+.disc-hole { position: absolute; z-index: 4; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 50%; background: var(--desk); box-shadow: inset 0 1px 4px rgba(0,0,0,.25); pointer-events: none; }
+.folds { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.folds i { position: absolute; border: 0 dashed rgba(47,111,221,.8); }
+.folds i.v { top: 0; bottom: 0; border-left-width: 1px; }
+.folds i.h { left: 0; right: 0; border-top-width: 1px; }
+.stock-thumb i.disc { border-radius: 50%; background: radial-gradient(circle, var(--panel-2) 0 26%, var(--muted) 27% 31%, var(--panel) 32%); }
 .size-tag { position: absolute; font-family: var(--font-num); font-size: 11px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* Status strip */
@@ -288,6 +294,8 @@ input[type="color"].input { padding: 2px; height: 30px; }
       <div class="label-frame" id="frame">
         <canvas id="c"></canvas>
         <div class="safe-area" id="safe"></div>
+        <div class="folds" id="folds" title="Fold lines (not printed)"></div>
+        <div class="disc-hole" id="hole" hidden></div>
       </div>
     </section>
 
@@ -485,6 +493,7 @@ input[type="color"].input { padding: 2px; height: 30px; }
         </div>
         <p class="hint" id="sh-some-hint" hidden>Click a label in the picture to start there. The grey ones are skipped, so you can use up a sheet that is partly used.</p>
         <label class="check"><input type="checkbox" id="sh-outline"> Draw the label outlines (for a test on plain paper)</label>
+        <label class="check"><input type="checkbox" id="sh-cut"> Cut marks and fold marks (for cutting with scissors or a trimmer)</label>
         <h3 style="margin:8px 0 0;font-size:12px">Printer adjustment</h3>
         <div class="row">
           <label class="field"><span>Move right (mm)</span><input class="input" type="number" id="sh-dx" step="0.1" value="0"></label>
@@ -1092,13 +1101,40 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // down, top margin, left margin, distance from one label to the next across and down (margins left out =
   // centred on the page), other product codes with the same layout, shape. Inches for US sheets, mm for A4.
   const PAGES = { Letter: [215.9, 279.4], Legal: [215.9, 355.6], A4: [210, 297] };
-  const sheets = (page, u, rows) => rows.map(([code, name, w, h, cols, down, top, left, hp, vp, also = '', shape = 'rect']) => {
+  const sheets = (page, u, rows) => rows.map(([code, name, w, h, cols, down, top, left, hp, vp, also = '', shape = 'rect', extra = {}]) => {
     const [pw, ph] = PAGES[page], k = u === 'in' ? 25.4 : 1, W = w * k, H = h * k;
     const sheet = { page, pw, ph, cols, rows: down, lw: W, lh: H, hp: hp * k, vp: vp * k, approx: top == null,
       left: left == null ? (pw - (hp * k * (cols - 1) + W)) / 2 : left * k,
       top: top == null ? (ph - (vp * k * (down - 1) + H)) / 2 : top * k };
-    return { code, name, w: W, h: H, shape, sheet, also };
+    if (extra.cut) sheet.cut = true;
+    // Items printed sideways on the page (turn 90 / 270) are designed the other way round.
+    const side = extra.turn === 90 || extra.turn === 270;
+    return { code, name, w: side ? H : W, h: side ? W : H, shape, sheet, also, ...extra };
   });
+  // CD and DVD: disc labels (hole = centre hole diameter), spine strips and case inserts with fold lines.
+  // Folds are in mm across the label as it is designed; cut marks are printed around paper inserts.
+  const DISC = (hole) => ({ hole, mode: 'color' });
+  const INSERT = (folds = [], turn) => ({ cut: true, mode: 'color', folds, ...(turn ? { turn } : {}) });
+  const discPages = (fn) => ['Letter', 'A4'].flatMap((pg) => sheets(pg, 'mm', fn(pg)));
+  const DISCS = [
+    ...sheets('Letter', 'mm', [['8931', 'CD/DVD labels, 2 per sheet', 118, 118, 1, 2, null, null, 118, 135, '5931 5692 8692', 'disc', DISC(41)]]),
+    ...sheets('A4', 'mm', [['L7676', 'CD/DVD labels, 2 per sheet', 117, 117, 1, 2, null, null, 117, 135, 'J8676', 'disc', DISC(41)]]),
+    ...discPages((pg) => [[`Full-face ${pg}`, `Full-face CD/DVD labels, 2 per ${pg} sheet (small hole)`, 118, 118, 1, 2, null, null, 118, 135, '', 'disc', DISC(17)]]),
+    { code: 'Printable disc', name: 'Print straight onto an inkjet-printable CD/DVD/Blu-ray', w: 118, h: 118, shape: 'disc', hole: 22, mode: 'color' },
+    { code: 'Mini CD', name: 'Mini CD/DVD (8 cm) label', w: 78, h: 78, shape: 'disc', hole: 22, mode: 'color' },
+    ...discPages((pg) => [
+      [`CD spine ${pg}`, `CD jewel case spine strips, 12 per ${pg} page`, 118, 6.5, 1, 12, null, null, 118, 18, '', 'square', INSERT()],
+      [`DVD spine ${pg}`, `DVD case spine strips, 10 per ${pg} page`, 183, 14, 1, 10, null, null, 183, 24, '', 'square', INSERT()],
+    ]),
+  ];
+  const CASES = discPages((pg) => [
+    [`CD front ${pg}`, `CD jewel case front cover 120 × 120 mm, 2 per ${pg} page`, 120, 120, 1, 2, null, null, 120, 135, '', 'square', INSERT()],
+    [`CD booklet ${pg}`, `CD booklet, folds to 120 × 120 mm (front on the right), ${pg}`, 120, 240, 1, 1, null, null, 120, 240, '', 'square', INSERT([{ x: 120 }], 270)],
+    [`CD tray card ${pg}`, `CD jewel case back (tray card) with both spines, 2 per ${pg} page`, 150, 118, 1, 2, null, null, 150, 130, '', 'square', INSERT([{ x: 6.5 }, { x: 143.5 }])],
+    [`DVD case ${pg}`, `DVD case cover, 14 mm spine (back · spine · front), ${pg}`, 183, 273, 1, 1, null, null, 183, 273, '', 'square', INSERT([{ x: 129.5 }, { x: 143.5 }], 270)],
+    [`Slim DVD ${pg}`, `Slim DVD case cover, 7 mm spine, ${pg}`, 183, 266, 1, 1, null, null, 183, 266, '', 'square', INSERT([{ x: 129.5 }, { x: 136.5 }], 270)],
+    [`Blu-ray case ${pg}`, `Blu-ray case cover, 12 mm spine, ${pg}`, 148, 269, 1, 1, null, null, 148, 269, '', 'square', INSERT([{ x: 128.5 }, { x: 140.5 }], 270)],
+  ]);
   const AVERY_US = sheets('Letter', 'in', [
     ['5160', 'Address, 30 per sheet', 2.625, 1, 3, 10, 0.5, 0.1875, 2.75, 1, '5260 5520 5630 5660 5810 5960 5970 5971 5972 5979 5980 6240 6970 8160 8250 8460 8660 8810 8920 15160 15660 15960 16460 18160 18260 18660 22837 28660 32660 38260 45160 48160 48260 48360 48460 48860 48960 55160 58160 58660 80509 85560 88560 95520'],
     ['5161', 'Address, 20 per sheet', 4, 1, 2, 10, 0.5, 0.15625, 4.1875, 1, '5261 5961 8161 18161 55161'],
@@ -1211,6 +1247,8 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     ['Avery (US Letter sheets)', AVERY_US],
     ['Avery (A4 sheets)', AVERY_A4],
     ['Laser and inkjet forms', FORMS],
+    ['CD and DVD labels', DISCS],
+    ['CD and DVD case inserts', CASES],
   ];
   STOCK.forEach(([brand, items]) => items.forEach((s) => { s.brand = brand; s.shape = s.shape || 'rect'; s.id = brand + '|' + s.code + '|' + s.name; }));
   const ALL_STOCK = STOCK.flatMap(([, items]) => items);
@@ -1249,6 +1287,13 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   let snapping = true;
 
   function labelPx() { return { w: px(label.w), h: px(label.h) }; }
+  // A disc: the outer circle with the centre hole cut out (even-odd fill).
+  function discPath(w, h, hole) {
+    const r = w / 2, q = hole / 2, cx = w / 2, cy = h / 2;
+    return `M ${cx - r} ${cy} a ${r} ${r} 0 1 0 ${2 * r} 0 a ${r} ${r} 0 1 0 ${-2 * r} 0 Z M ${cx - q} ${cy} a ${q} ${q} 0 1 0 ${2 * q} 0 a ${q} ${q} 0 1 0 ${-2 * q} 0 Z`;
+  }
+  // Fold lines after turning the label 90° clockwise (the same turn as "Turn label 90°").
+  const turnFolds = (folds, w, h) => (folds || []).map((f) => (f.x != null ? { y: f.x } : { x: h - f.y }));
 
   function applyLabel(next, { shiftObjects = true } = {}) {
     const prev = label;
@@ -1264,8 +1309,9 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     const { w, h } = labelPx();
     canvas.clipPath = label.shape === 'round'
       ? new fabric.Ellipse({ rx: w / 2, ry: h / 2, left: 0, top: 0, absolutePositioned: true })
+      : label.shape === 'disc' ? new fabric.Path(discPath(w, h, px(label.hole || 41)), { left: 0, top: 0, fillRule: 'evenodd', absolutePositioned: true })
       : null;
-    frame.className = 'label-frame' + (label.shape === 'round' ? ' round' : label.shape === 'tape' ? ' tape' : '') + (label.mode === 'bw' ? ' bw' : '');
+    frame.className = 'label-frame' + (label.shape === 'round' || label.shape === 'disc' ? ' round' : label.shape === 'tape' ? ' tape' : '') + (label.mode === 'bw' ? ' bw' : '');
     frame.style.borderRadius = label.shape === 'rect' ? (px(1.6) * zoom) + 'px' : '';
     frame.classList.toggle('bw', label.mode === 'bw');
     renderStockList();
@@ -1283,6 +1329,11 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     const m = px(label.shape === 'tape' ? 1 : 1.5) * zoom;
     Object.assign(safeEl.style, { left: m + 'px', top: m + 'px', right: m + 'px', bottom: m + 'px' });
     safeEl.hidden = !showSafe;
+    const hole = $('hole');
+    hole.hidden = label.shape !== 'disc';
+    if (!hole.hidden) hole.style.width = hole.style.height = px(label.hole || 41) * zoom + 'px';
+    $('folds').innerHTML = showSafe ? (label.folds || []).map((f) => f.x != null
+      ? `<i class="v" style="left:${px(f.x) * zoom}px"></i>` : `<i class="h" style="top:${px(f.y) * zoom}px"></i>`).join('') : '';
     document.getElementById('zoom-val').textContent = Math.round(zoom / (96 / DPI) * 100) + '%';
     canvas.requestRenderAll();
   }
@@ -1472,7 +1523,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   function turnLabel() {
     const old = labelPx();
     canvas.discardActiveObject();
-    const next = { ...label, w: label.h, h: label.w, turn: ((label.turn || 0) + 90) % 360 };
+    const next = { ...label, w: label.h, h: label.w, turn: ((label.turn || 0) + 90) % 360, folds: turnFolds(label.folds, label.w, label.h) };
     quiet(() => canvas.getObjects().forEach((o) => {
       const c = o.getCenterPoint();
       o.setPositionByOrigin(new fabric.Point(old.h - c.y, c.x), 'center', 'center');
@@ -1540,7 +1591,8 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     if (!o) {
       $('props-title').textContent = 'Label';
       $('p-stock-name').textContent = `${label.brand === 'Custom' ? 'Custom' : label.brand + ' ' + label.code} – ${label.name}`;
-      $('p-stock-size').textContent = fmtSize(label.w, label.h) + (label.shape === 'round' ? ', round' : label.shape === 'tape' ? ', continuous' : '');
+      $('p-stock-size').textContent = fmtSize(label.w, label.h) + (label.shape === 'round' ? ', round' : label.shape === 'disc' ? `, disc with a ${label.hole} mm centre hole` : label.shape === 'tape' ? ', continuous' : '')
+        + (label.folds && label.folds.length ? ` · ${label.folds.length} fold line${label.folds.length > 1 ? 's' : ''} (blue)` : '');
       const bw = label.mode === 'bw';
       $('mode-color').setAttribute('aria-pressed', String(!bw));
       $('mode-bw').setAttribute('aria-pressed', String(bw));
@@ -1975,7 +2027,9 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     canvas.viewportTransform = vpt; canvas.backgroundColor = bg; canvas.requestRenderAll(); showProps();
     // The label background (white, or the label colour in full colour) covering the whole label, drawn first.
     const bgc = label.mode === 'bw' ? '#ffffff' : (label.bg || '#ffffff');
-    const shape = label.shape === 'round'
+    const shape = label.shape === 'disc'
+      ? `<path d="${discPath(w, h, px(label.hole || 41))}" fill-rule="evenodd" fill="${bgc}"/>`
+      : label.shape === 'round'
       ? `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2}" ry="${h / 2}" fill="${bgc}"/>`
       : `<rect x="0" y="0" width="${w}" height="${h}" fill="${bgc}"/>`;
     // Black & white: everything is shown in greys (the printer driver turns greys into dots).
@@ -2068,7 +2122,7 @@ ${shape}${bwOpen}`);
     let html = '';
     for (let i = 0; i < n; i++) {
       const b = slotBox(i), state = first.has(i) ? 'print' : some && i < shStart - 1 ? 'used' : 'empty';
-      html += `<button type="button" data-i="${i}" class="${state}${label.shape === 'round' ? ' round' : ''}" title="Label ${i + 1}${state === 'used' ? ' (skipped)' : ''}" style="left:${b.x / t.pw * 100}%;top:${b.y / t.ph * 100}%;width:${b.w / t.pw * 100}%;height:${b.h / t.ph * 100}%"></button>`;
+      html += `<button type="button" data-i="${i}" class="${state}${label.shape === 'round' || label.shape === 'disc' ? ' round' : ''}" title="Label ${i + 1}${state === 'used' ? ' (skipped)' : ''}" style="left:${b.x / t.pw * 100}%;top:${b.y / t.ph * 100}%;width:${b.w / t.pw * 100}%;height:${b.h / t.ph * 100}%"></button>`;
     }
     prev.innerHTML = html;
     prev.querySelectorAll('button.print').forEach((b) => { b.style.backgroundImage = `url(${thumb})`; });
@@ -2080,15 +2134,20 @@ ${shape}${bwOpen}`);
     const t = label.sheet;
     $('sh-desc').textContent = `${label.brand === 'Custom' ? 'Custom sheet' : label.brand + ' ' + label.code} · ${t.cols * t.rows} labels on ${t.page} paper (${fmtSize(t.pw, t.ph)}) · ${label.mode === 'bw' ? 'black & white' : 'full colour'}`;
     $('sh-tip').textContent = (t.approx ? 'This layout is worked out from the label size, so print one test page with outlines on plain paper first. ' : '')
+      + (Math.min(t.top, t.left) < 6 ? 'This nearly fills the page, so some cut marks fall off the paper (trim along the paper edge there) and many printers cannot print right to the edge. A4 or Legal paper gives more room. ' : '')
       + 'In the print window choose the paper size ' + t.page + ', margins None and scale 100% (Actual size). If the labels land a little off, enter how far to move them and print again; LabelCraft remembers it.';
     try { const a = JSON.parse(localStorage.getItem(ADJ_KEY) || '{}'); $('sh-dx').value = a.dx || 0; $('sh-dy').value = a.dy || 0; } catch (e) {}
     shStart = Math.min(shStart, t.cols * t.rows);
+    $('sh-cut').checked = !!t.cut;
     $('sh-count').value = Math.max(1, Math.min(+$('sh-count').value || 1, t.cols * t.rows));
     drawSheetPreview();
     $('sheet').hidden = false; $('sh-go').focus();
   }
   function sheetPages() {
-    const t = label.sheet, dpi = 300, k = dpi / 25.4, dx = num('sh-dx') || 0, dy = num('sh-dy') || 0, outline = $('sh-outline').checked;
+    const t = label.sheet, dpi = 300, k = dpi / 25.4, dx = num('sh-dx') || 0, dy = num('sh-dy') || 0, outline = $('sh-outline').checked, cut = $('sh-cut').checked;
+    // Fold lines turned to the way the label sits on the page.
+    let folds = label.folds || [], fw = label.w, fh = label.h;
+    for (let n = ((360 - (label.turn || 0)) % 360) / 90; n > 0; n--) { folds = turnFolds(folds, fw, fh); [fw, fh] = [fh, fw]; }
     try { localStorage.setItem(ADJ_KEY, JSON.stringify({ dx, dy })); } catch (e) {}
     const cell = cellImage(dpi, true);
     return sheetPlan().map((slots) => {
@@ -2102,8 +2161,24 @@ ${shape}${bwOpen}`);
         ctx.drawImage(cell, x, y);
         if (outline) {
           ctx.save(); ctx.strokeStyle = '#9aa1ad'; ctx.lineWidth = 0.2 * k; ctx.beginPath();
-          if (label.shape === 'round') ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+          if (label.shape === 'round' || label.shape === 'disc') ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
           else ctx.rect(x, y, w, h);
+          if (label.shape === 'disc') { const q = (label.hole || 41) / 2 * k; ctx.moveTo(x + w / 2 + q, y + h / 2); ctx.ellipse(x + w / 2, y + h / 2, q, q, 0, 0, Math.PI * 2); }
+          ctx.stroke(); ctx.restore();
+        }
+        if (cut) {
+          // Corner cut marks and fold ticks, just outside the item so they are cut away.
+          const g = 1.5 * k, L = 4 * k, line = (x1, y1, x2, y2) => { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); };
+          ctx.save(); ctx.strokeStyle = '#000000'; ctx.lineWidth = Math.max(1, 0.15 * k); ctx.beginPath();
+          [[x, y, -1, -1], [x + w, y, 1, -1], [x, y + h, -1, 1], [x + w, y + h, 1, 1]].forEach(([cx, cy, sx, sy]) => {
+            line(cx + sx * g, cy, cx + sx * (g + L), cy); line(cx, cy + sy * g, cx, cy + sy * (g + L));
+          });
+          ctx.stroke();
+          ctx.setLineDash([0.8 * k, 0.6 * k]); ctx.beginPath();
+          folds.forEach((f) => {
+            if (f.x != null) { const fx = x + f.x * k; line(fx, y - g, fx, y - g - L); line(fx, y + h + g, fx, y + h + g + L); }
+            else { const fy = y + f.y * k; line(x - g, fy, x - g - L, fy); line(x + w + g, fy, x + w + g + L, fy); }
+          });
           ctx.stroke(); ctx.restore();
         }
       });
@@ -2159,6 +2234,7 @@ ${shape}${bwOpen}`);
       <li>The dashed red line marks the safe printing area. Keep important content inside it.</li></ol>
     <h3>Colour or black &amp; white</h3><p>Thermal label printers (Dymo, Brother, Zebra) print only black, so their labels start in <b>Black &amp; white</b> and the preview shows it. Sheet labels start in <b>Full colour</b> for inkjet and colour laser printers. Switch any time under <b>Print colour</b> on the right or on the Home tab.</p>
     <h3>Sheets for laser and inkjet printers</h3><p>Pick an Avery code (searching for any compatible code works, for example 8160 finds 5160) or a form from <b>Laser and inkjet forms</b>. <b>Print</b> then fills a whole sheet, or prints a few labels starting at any position so you can use up a partly used sheet. Use <b>Custom size › Sheet of labels</b> for any other sheet.</p>
+    <h3>CDs, DVDs and cases</h3><p><b>CD and DVD labels</b> are discs with the centre hole cut out (Avery 8931 / L7676, full-face labels, printable discs and mini CDs). <b>CD and DVD case inserts</b> cover jewel case fronts, folded booklets, tray cards with both spines, and DVD, slim DVD and Blu-ray covers. Blue dashed lines show where the paper folds (spines); they are not printed. Inserts print with cut marks and fold marks so you can trim them.</p>
     <h3>3. Print or export</h3><p><b>File › Print</b> sends the label at its real size to your label printer. In the print window, choose your printer and its label size, and set scale to 100% (Actual size). <b>Export</b> saves PNG, JPG or SVG at your printer's resolution.</p>`;
   const aboutHtml = `<p><b>LabelCraft</b> · version 0.2</p><p>A label designer for Dymo, Brother, Zebra and Avery sheet labels, in full colour or black &amp; white, running in your browser.</p>
     <p>Built with <a href="https://fabricjs.com" target="_blank" rel="noopener">Fabric.js</a> 5.3 (MIT), <a href="https://github.com/lindell/JsBarcode" target="_blank" rel="noopener">JsBarcode</a> 3.11 (MIT) and <a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener">qrcode-generator</a> 1.4 (MIT).</p>

@@ -34,6 +34,8 @@ Your label also autosaves in the browser.
 - **Zebra / thermal** labels
 - **Avery** sheets for laser and inkjet printers, with their real sheet layouts: 22 US Letter templates (5160, 5161, 5162, 5163, 5164, 5167, 5195, 5366, 5395, 5371, round and square labels…) and 20 A4 templates (L7160/J8160, L7163, L7165, L7651…). **Search for any compatible code**: 8160, 5960, 18160 and 40 other codes all find 5160.
 - **Laser and inkjet forms**: full, half, quarter and sixth sheets on Letter, A4 (A5, A6, A7) and Legal, plus two 4 × 6 in shipping labels per page.
+- **CD and DVD labels**: discs with the centre hole cut out: Avery 8931 (5931, 5692, 8692) and L7676 / J8676, full-face labels (small hole) on Letter and A4, inkjet-printable discs and mini CDs. The hole stays blank when printing.
+- **CD and DVD case inserts** on Letter and A4: jewel case front cover, folded booklet, tray card with both spines, spine strips, and DVD (14 mm spine), slim DVD (7 mm) and Blu-ray covers. Blue dashed **fold lines** show the spines on screen (not printed), and inserts print with **cut marks and fold marks**.
 - **Custom sheet** for any other sheet: label size, page (Letter, A4, Legal), labels across and down, gaps.
 - **Custom size** in mm or inches: rounded or square corners, round / oval, or continuous tape (set the tape length).
 - **Turn label 90°** turns the whole label sideways, content and all.
