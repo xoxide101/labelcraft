@@ -94,3 +94,7 @@ Chrome or Edge (recent versions). Firefox and Safari work too, but download file
 
 - [Fabric.js](http://fabricjs.com/) 5.3.1, [JsBarcode](https://github.com/lindell/JsBarcode) 3.11.6, [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 (all MIT)
 - Fonts: Archivo Black, Barlow Condensed, Instrument Sans, JetBrains Mono, Oswald, Roboto Mono (SIL Open Font License)
+
+## Development notes
+
+How the app is built, the decisions behind it, and known pitfalls: see [NOTES.md](NOTES.md).
