@@ -178,6 +178,21 @@ input[type="color"].input { padding: 2px; height: 30px; }
 .tb-grid tr:first-child input.head { font-weight: 600; }
 .tb-grid input:focus { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--panel); }
 .crb .rb-font { display: grid; gap: 4px; padding: 2px 4px; }
+.crb .rb-font .rb-row { display: flex; gap: 4px; align-items: center; }
+.crb .rb-sel { height: 25px; font: inherit; font-size: 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); color: inherit; padding: 0 4px; max-width: 128px; }
+.rb-color { position: relative; }
+.rb-color .rb-bar { position: absolute; left: 5px; bottom: 2px; width: 17px; height: 4px; border-radius: 1px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.rb-pop { position: fixed; z-index: 3000; width: 214px; padding: 8px; background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 14px 36px rgba(0,0,0,.28); font-size: 12px; }
+.rb-pop h6 { margin: 0 0 6px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.rb-pop .sw { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 8px; }
+.rb-pop .sw button { width: 100%; aspect-ratio: 1; border: 1px solid rgba(0,0,0,.2); border-radius: 4px; cursor: pointer; padding: 0; }
+.rb-pop .sw button:hover { outline: 2px solid var(--accent); }
+.rb-pop .act { display: flex; gap: 6px; }
+.rb-pop .act button, .rb-pop .act label { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; height: 28px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); cursor: pointer; font: inherit; color: inherit; position: relative; overflow: hidden; }
+.rb-pop .act input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.arc-row { display: grid; grid-template-columns: 1fr auto auto; gap: 4px; align-items: center; }
+.arc-row input[type="range"] { width: 100%; }
+.arc-row .btn { height: 28px; padding: 0 8px; }
 .crb .rb-font select, .crb .rb-font input { height: 25px; font: inherit; font-size: 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); color: inherit; padding: 0 6px; box-sizing: border-box; }
 .crb .rb-font select { width: 150px; }
 .crb .rb-font input { width: 64px; }
@@ -414,10 +429,47 @@ input[type="color"].input { padding: 2px; height: 30px; }
           </div>
           <label class="check"><input type="checkbox" id="t-wrap"> Wrap text in a box (drag the sides to set its width)</label>
           <div class="row">
+            <button class="btn outline" id="t-curve-up" title="Bend the text around the centre of the label, along the top">Curve up ◠</button>
+            <button class="btn outline" id="t-curve-down" title="Bend the text around the centre of the label, along the bottom">Curve down ◡</button>
+          </div>
+          <div class="row">
             <button class="btn outline" id="t-fit" title="Make the text exactly as wide as the label">Fit to label</button>
             <select class="input" id="t-insert" aria-label="Insert date, time or symbol"></select>
           </div>
           <label class="check"><input type="checkbox" id="t-invert"> White text on black</label>
+        </div>
+
+        <div class="sec" id="p-arc" hidden>
+          <h3>Curved text</h3>
+          <input class="input" id="a-text" aria-label="Curved text" autocomplete="off">
+          <div class="seg" role="group" aria-label="Curve direction">
+            <button class="btn" id="a-up" aria-pressed="false" title="Along the top, reading clockwise">◠ Curve up</button>
+            <button class="btn" id="a-down" aria-pressed="false" title="Along the bottom, reading left to right">◡ Curve down</button>
+          </div>
+          <label class="field"><span>Distance from the centre: <b id="a-r-v"></b></span></label>
+          <div class="arc-row">
+            <input type="range" id="a-r" min="1" max="80" step="0.5" aria-label="Distance from the centre">
+            <button class="btn outline" id="a-in" title="Move in toward the centre">In</button>
+            <button class="btn outline" id="a-out" title="Move out from the centre">Out</button>
+          </div>
+          <label class="field"><span>Position around the centre: <b id="a-pos-v"></b></span></label>
+          <div class="arc-row">
+            <input type="range" id="a-pos" min="-180" max="180" step="1" aria-label="Position around the centre">
+            <button class="btn outline" id="a-ccw" title="Turn around the centre to the left (15°)">⟲</button>
+            <button class="btn outline" id="a-cw" title="Turn around the centre to the right (15°)">⟳</button>
+          </div>
+          <label class="field"><span>Spread around the circle: <b id="a-span-v"></b></span></label>
+          <input type="range" id="a-span" min="0" max="360" step="1" aria-label="Spread around the circle (0 = natural spacing)">
+          <div class="row">
+            <label class="field"><span>Font</span><select class="input" id="a-font"></select></label>
+            <label class="field"><span>Size (pt)</span><input class="input" type="number" step="0.5" min="2" id="a-size" list="t-sizes"></label>
+          </div>
+          <div class="row">
+            <label class="field"><span>Colour</span><input class="input" type="color" id="a-color"></label>
+            <label class="field"><span>Letter spacing</span><input class="input" type="number" step="10" id="a-spacing"></label>
+          </div>
+          <button class="btn outline" id="a-straight" title="Turn it back into normal, straight text">Straighten text</button>
+          <p class="hint">Drag the curved text on the label to slide it around the centre, or toward and away from it. The round handle turns it around the centre. Bold, italic, colour, outline and shadow are on the Text tab.</p>
         </div>
 
         <div class="sec" id="p-table" hidden>
@@ -1356,7 +1408,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // =====================================================================
   // Canvas
   // =====================================================================
-  const PROPS = ['kind', 'bc', 'invert', 'tb'];
+  const PROPS = ['kind', 'bc', 'invert', 'tb', 'arc'];
   fabric.Object.prototype.set({
     transparentCorners: false, cornerColor: '#ffffff', cornerStrokeColor: '#c8322b', borderColor: '#c8322b',
     cornerStyle: 'circle', cornerSize: 10, borderScaleFactor: 1.5, padding: 0,
@@ -1516,6 +1568,38 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     }
     return new fabric.Group(parts, { originX: 'center', originY: 'center', kind: 'table', tb: JSON.parse(JSON.stringify(tb)), lockScalingFlip: true });
   }
+  // Curved text: { text, r (mm from the label centre), pos (° around it; 0 = top, clockwise), dir 'up' | 'down',
+  // span (° to spread over; 0 = natural), font, size (pt), weight, style, fill, spacing (1/1000 em), stroke, sw (mm), shadow }.
+  // Each letter is placed on the circle and turned to follow it; the group is rebuilt whenever something changes.
+  function buildArc(a) {
+    const cx = px(label.w) / 2, cy = px(label.h) / 2, r = Math.max(px(0.5), px(a.r));
+    const base = { fontFamily: a.font, fontSize: ptToPx(a.size), fontWeight: a.weight || 'normal', fontStyle: a.style || 'normal', fill: a.fill || '#000000',
+      stroke: a.sw ? a.stroke || '#000000' : null, strokeWidth: a.sw ? px(a.sw) : 0, paintFirst: 'stroke', originX: 'center', originY: 'center',
+      shadow: a.shadow ? new fabric.Shadow({ color: 'rgba(0,0,0,.45)', blur: px(0.5), offsetX: px(0.35), offsetY: px(0.35) }) : null };
+    const glyphs = Array.from(a.text || ' ').map((ch) => new fabric.Text(ch, base));
+    const gap = (a.spacing || 0) / 1000 * ptToPx(a.size);
+    const widths = glyphs.map((g) => g.width);
+    const total = widths.reduce((x, w) => x + w, 0) + gap * Math.max(0, glyphs.length - 1);
+    const natural = total / r, k = a.span > 0 && glyphs.length > 1 ? (a.span * Math.PI / 180) / natural : 1;
+    const down = a.dir === 'down', sign = down ? -1 : 1, pos = (a.pos || 0) * Math.PI / 180;
+    let s = -total / 2;
+    glyphs.forEach((g, i) => {
+      const th = pos + sign * ((s + widths[i] / 2) / r) * k;
+      g.set({ left: cx + r * Math.sin(th), top: cy - r * Math.cos(th), angle: th * 180 / Math.PI + (down ? 180 : 0) });
+      s += widths[i] + gap;
+    });
+    return new fabric.Group(glyphs, { originX: 'center', originY: 'center', kind: 'arc', arc: { ...a }, lockScalingFlip: true, lockUniScaling: true });
+  }
+  // Swap in a rebuilt object that already sits where it should (curved text).
+  function replaceInPlace(old, neu, hist = true) {
+    const idx = canvas.getObjects().indexOf(old);
+    quiet(() => { canvas.remove(old); canvas.insertAt(neu, idx); });
+    canvas.setActiveObject(neu);
+    neu.setCoords();
+    canvas.requestRenderAll();
+    if (hist) pushHistory();
+  }
+
   // Put a rebuilt object where the old one was (same centre, angle and stacking order).
   function swapObject(old, neu) {
     const c = old.getCenterPoint();
@@ -1698,6 +1782,10 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
       o.setCoords();
     }));
     applyLabel(next, { shiftObjects: false });
+    quiet(() => canvas.getObjects().filter((o) => o.kind === 'arc').forEach((o) => {
+      const idx = canvas.getObjects().indexOf(o);
+      canvas.remove(o); canvas.insertAt(buildArc({ ...o.arc, pos: ((o.arc.pos + 90 + 180) % 360) - 180 }), idx);
+    }));
     fitZoom(); pushHistory(); showProps();
   }
 
@@ -1711,6 +1799,21 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
       if (o.type === 'textbox') o.set('width', o.width / s);
       if (Math.abs(o.scaleX - 1) < 0.02) o.set('scaleX', 1);
       o.setCoords();
+    }
+    if (o.kind === 'arc') {
+      // Moving slides it around the centre and in or out; the rotate handle turns it around the centre.
+      const a = { ...o.arc }, cx = px(label.w) / 2, cy = px(label.h) / 2;
+      const was = buildArc(a).getCenterPoint(), now = o.getCenterPoint();
+      const ang = (q) => Math.atan2(q.x - cx, -(q.y - cy)) * 180 / Math.PI, dist = (q) => Math.hypot(q.x - cx, q.y - cy);
+      if (Math.hypot(now.x - was.x, now.y - was.y) > 1) {
+        if (dist(was) > px(1) && dist(now) > px(1)) a.pos += ang(now) - ang(was);
+        a.r = Math.max(1, a.r + mmOf(dist(now) - dist(was)) * (a.dir === 'down' ? 1 : 1));
+      }
+      a.pos = ((((a.pos + (o.angle || 0)) + 180) % 360 + 360) % 360) - 180;
+      if (Math.abs((o.scaleX || 1) - 1) > 0.001) a.size = Math.max(2, a.size * o.scaleX);
+      replaceInPlace(o, buildArc(a));
+      showProps();
+      return;
     }
     if (o.kind === 'table' && (Math.abs(o.scaleX - 1) > 0.001 || Math.abs(o.scaleY - 1) > 0.001)) {
       const t = o.tb;
@@ -1761,7 +1864,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     const o = active();
     $('p-none').hidden = !!o;
     $('p-obj').hidden = !o;
-    ['p-text', 'p-barcode', 'p-qr', 'p-shape', 'p-image', 'p-table'].forEach((id) => { $(id).hidden = true; });
+    ['p-text', 'p-barcode', 'p-qr', 'p-shape', 'p-image', 'p-table', 'p-arc'].forEach((id) => { $(id).hidden = true; });
     document.querySelectorAll('[data-rot], #rot-cw, #rot-ccw, #rot-180').forEach((b) => { b.disabled = !o; });
     if (!o) {
       $('props-title').textContent = 'Label';
@@ -1785,14 +1888,14 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     }
     const multi = o.type === 'activeSelection';
     const k = multi ? 'multi' : kindOf(o);
-    $('props-title').textContent = { multi: multi ? `${o.size()} items` : '', text: 'Text', barcode: TWO_D[o.bc?.type] || 'Barcode', table: 'Table', rect: 'Box', ellipse: 'Ellipse', line: 'Line', image: 'Image' }[k] || 'Item';
+    $('props-title').textContent = { multi: multi ? `${o.size()} items` : '', text: 'Text', barcode: TWO_D[o.bc?.type] || 'Barcode', table: 'Table', arc: 'Curved text', rect: 'Box', ellipse: 'Ellipse', line: 'Line', image: 'Image' }[k] || 'Item';
     $('unit-note').textContent = `(${unit})`;
     const r = o.getBoundingRect(true, true);
     $('p-x').value = toUnit(mmOf(r.left));
     $('p-y').value = toUnit(mmOf(r.top));
     $('p-w').value = toUnit(mmOf(o.getScaledWidth()));
     $('p-h').value = toUnit(mmOf(o.getScaledHeight()));
-    $('p-size-row').hidden = multi || k === 'text';
+    $('p-size-row').hidden = multi || k === 'text' || k === 'arc';
     $('p-h').disabled = k === 'line' || is2D(o.bc?.type);
     $('p-angle').value = Math.round(o.angle || 0);
     if (k === 'text') {
@@ -1803,6 +1906,9 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
       $('t-spacing').value = o.charSpacing || 0;
       $('t-lineh').value = o.lineHeight;
       $('t-invert').checked = !!o.invert;
+    } else if (k === 'arc') {
+      $('p-arc').hidden = false;
+      showArc(o);
     } else if (k === 'table') {
       $('p-table').hidden = false;
       showTable(o);
@@ -1867,9 +1973,94 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // ---- Word-style formatting. With words selected while editing the text on the label, a change applies to
   // those words only; otherwise to the whole text.
   const T = () => { const o = active(); return o && kindOf(o) === 'text' ? o : null; };
+  const A = () => { const o = active(); return o && o.kind === 'arc' ? o : null; };
+  const TX = () => T() || A(); // text that font formatting applies to (normal or curved)
+  // Font formatting on curved text changes its model.
+  function arcStyleOf(a, prop) {
+    return { fontWeight: a.weight || 'normal', fontStyle: a.style || 'normal', fill: a.fill || '#000000', fontFamily: a.font, fontSize: ptToPx(a.size),
+      stroke: a.sw ? a.stroke : null, strokeWidth: a.sw ? px(a.sw) : 0 }[prop];
+  }
+  function arcPatch(style) {
+    const m = { fontWeight: 'weight', fontStyle: 'style', fill: 'fill', fontFamily: 'font', stroke: 'stroke' }, out = {};
+    Object.entries(style).forEach(([k, v]) => {
+      if (m[k]) out[m[k]] = v;
+      else if (k === 'fontSize') out.size = +pxToPt(v).toFixed(1);
+      else if (k === 'strokeWidth') out.sw = v ? mmOf(v) : 0;
+    });
+    return out;
+  }
+  function setArc(patch, hist = true) {
+    const o = A(); if (!o) return;
+    replaceInPlace(o, buildArc({ ...o.arc, ...patch }), hist);
+    showProps();
+  }
+  const arcFits = () => Math.min(label.w, label.h) / 2;
+  function defaultRadius(dir, sizePt) {
+    const font = sizePt * 0.3528, edge = arcFits() - 1.8 - font * 0.55;
+    if (label.shape === 'disc') return Math.max((label.hole || 41) / 2 + font, edge);
+    return Math.max(font, edge);
+  }
+  // Curve up / down: bends the selected text (or curved text), or adds new curved text.
+  function curveText(dir) {
+    const a = A();
+    if (a) { setArc({ dir, pos: dir === 'down' ? 180 : 0 }); return; }
+    const o = T();
+    let m;
+    if (o) {
+      if (o.isEditing) o.exitEditing();
+      const size = +pxToPt(o.fontSize * (o.scaleY || 1)).toFixed(1);
+      m = { text: o.text.replace(/\n+/g, ' '), font: o.fontFamily, size, weight: o.fontWeight, style: o.fontStyle, fill: typeof o.fill === 'string' ? o.fill : '#000000',
+        spacing: o.charSpacing || 0, stroke: o.stroke, sw: o.stroke && o.strokeWidth ? mmOf(o.strokeWidth) : 0, shadow: !!o.shadow };
+    } else m = { text: 'CURVED TEXT ON A LABEL', font: 'Arial', size: Math.max(6, Math.min(12, arcFits() * 0.25)), weight: 'bold', style: 'normal', fill: '#000000', spacing: 60 };
+    m = { ...m, dir, pos: dir === 'down' ? 180 : 0, span: 0, r: defaultRadius(dir, m.size) };
+    const g = buildArc(m);
+    if (o) replaceInPlace(o, g); else { add(g); }
+    showProps();
+  }
+  function straighten() {
+    const o = A(); if (!o) return;
+    const a = o.arc, c = o.getCenterPoint();
+    const t = makeText(a.text, { fontFamily: a.font, fontSize: ptToPx(a.size), fontWeight: a.weight, fontStyle: a.style, fill: a.fill, charSpacing: a.spacing || 0,
+      stroke: a.sw ? a.stroke : null, strokeWidth: a.sw ? px(a.sw) : 0, paintFirst: 'stroke' });
+    if (a.shadow) t.set('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,.45)', blur: px(0.5), offsetX: px(0.35), offsetY: px(0.35) }));
+    t.setPositionByOrigin(c, 'center', 'center');
+    replaceInPlace(o, t);
+    showProps();
+  }
+  const moveArc = (dmm) => { const o = A(); if (o) setArc({ r: Math.max(1, o.arc.r + dmm) }); };
+  const turnArc = (deg) => { const o = A(); if (o) setArc({ pos: ((o.arc.pos + deg + 180) % 360 + 360) % 360 - 180 }); };
+  function showArc(o) {
+    const a = o.arc;
+    const rf = document.querySelector('.rb-font select'); if (rf && document.activeElement !== rf) rf.value = a.font;
+    const rs = document.querySelector('.rb-font input'); if (rs && document.activeElement !== rs) rs.value = a.size;
+    if (document.activeElement !== $('a-text')) $('a-text').value = a.text;
+    $('a-up').setAttribute('aria-pressed', String(a.dir !== 'down')); $('a-down').setAttribute('aria-pressed', String(a.dir === 'down'));
+    $('a-r').max = Math.ceil(Math.max(label.w, label.h) / 2 + 10);
+    $('a-r').value = a.r; $('a-r-v').textContent = `${toUnit(a.r)} ${unit}`;
+    $('a-pos').value = a.pos; $('a-pos-v').textContent = `${Math.round(a.pos)}°`;
+    $('a-span').value = a.span || 0; $('a-span-v').textContent = a.span ? `${Math.round(a.span)}°` : 'natural spacing';
+    $('a-font').value = a.font; $('a-size').value = a.size; $('a-color').value = /^#[0-9a-f]{6}$/i.test(a.fill || '') ? a.fill : '#000000';
+    $('a-spacing').value = a.spacing || 0;
+  }
+  // Effects that apply to the whole item: shadow, outline on or off.
+  const SHADOW = () => new fabric.Shadow({ color: 'rgba(0,0,0,.45)', blur: px(0.5), offsetX: px(0.35), offsetY: px(0.35) });
+  const hasShadow = () => { const o = TX(); return !!o && (o.kind === 'arc' ? !!o.arc.shadow : !!o.shadow); };
+  function toggleShadow() {
+    const o = TX(); if (!o) return;
+    if (o.kind === 'arc') return setArc({ shadow: !o.arc.shadow });
+    o.set('shadow', o.shadow ? null : SHADOW()); o.dirty = true; modified(o);
+  }
+  const hasOutline = () => { const o = TX(); return !!o && !!styleOf(o, 'stroke') && styleOf(o, 'strokeWidth') > 0; };
+  function toggleOutline() {
+    const o = TX(); if (!o) return;
+    if (hasOutline()) setStyle({ stroke: null, strokeWidth: 0 });
+    else { if (o.kind !== 'arc') o.set('paintFirst', 'stroke'); setStyle({ stroke: lastOutline, strokeWidth: px(0.25) }); }
+  }
+  let lastOutline = '#ffffff';
   const range = (o) => (o.isEditing && o.selectionEnd > o.selectionStart ? [o.selectionStart, o.selectionEnd] : null);
   // The value of a style over the selected words (or the whole text); undefined when it is mixed.
   function styleOf(o, prop) {
+    if (o.kind === 'arc') return arcStyleOf(o.arc, prop);
     const [a, b] = range(o) || [0, o.text.length];
     if (b <= a) return o[prop];
     const v = o.getSelectionStyles(a, b, true).map((st) => st[prop]);
@@ -1878,13 +2069,14 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // Keep fabric's hidden text box in step after changing the text from outside while editing.
   function syncEditing(o) { if (o.isEditing && o.hiddenTextarea) { o.hiddenTextarea.value = o.text; o._updateTextarea(); } }
   function setStyle(style) {
+    if (A()) { setArc(arcPatch(style)); return; }
     const o = T(); if (!o) return;
     const r = range(o);
     if (r) o.setSelectionStyles(style, r[0], r[1]);
     else { Object.keys(style).forEach((k) => o.removeStyle(k)); o.set(style); }
     o.initDimensions(); o.dirty = true; modified(o);
   }
-  const toggleStyle = (prop, on, off) => { const o = T(); if (o) setStyle({ [prop]: styleOf(o, prop) === on ? off : on }); };
+  const toggleStyle = (prop, on, off) => { const o = TX(); if (o) setStyle({ [prop]: styleOf(o, prop) === on ? off : on }); };
   const isScript = (o, dir) => { const d = styleOf(o, 'deltaY'); return d != null && (dir < 0 ? d < 0 : d > 0); };
   function setScript(dir) {
     const o = T(); if (!o) return;
@@ -1895,7 +2087,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   }
   const SIZES = [5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 96];
   function stepSize(dir) {
-    const o = T(); if (!o) return;
+    const o = TX(); if (!o) return;
     const cur = pxToPt(styleOf(o, 'fontSize') || o.fontSize);
     const next = dir > 0 ? SIZES.find((x) => x > cur + 0.01) || Math.round(cur * 1.2) : [...SIZES].reverse().find((x) => x < cur - 0.01) || Math.max(2, cur / 1.2);
     setStyle({ fontSize: ptToPx(next) });
@@ -1912,6 +2104,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     o.initDimensions(); modified(o);
   }
   function clearFormat() {
+    if (A()) { setArc({ weight: 'normal', style: 'normal', fill: '#000000', sw: 0, shadow: false, spacing: 0 }); return; }
     const o = T(); if (!o) return;
     const base = { fontWeight: 'normal', fontStyle: 'normal', underline: false, linethrough: false, overline: false, fill: '#000000', textBackgroundColor: '', stroke: null, strokeWidth: 0, deltaY: 0 };
     const r = range(o);
@@ -2056,6 +2249,30 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     updateBc({ type: t, value, wmm }, 'q-error');
     showProps();
   };
+
+  // ---- Curved text panel
+  $('a-font').innerHTML = FONTS.map((f) => `<option style="font-family:'${f}'">${f}</option>`).join('');
+  $('a-text').oninput = () => setArc({ text: $('a-text').value || ' ' }, false);
+  $('a-text').onchange = () => pushHistory();
+  $('a-up').onclick = () => curveText('up');
+  $('a-down').onclick = () => curveText('down');
+  [['a-r', (v) => ({ r: +v })], ['a-pos', (v) => ({ pos: +v })], ['a-span', (v) => ({ span: +v })]].forEach(([id, f]) => {
+    $(id).oninput = () => setArc(f($(id).value), false);
+    $(id).onchange = () => pushHistory();
+  });
+  $('a-in').onclick = () => moveArc(-1);
+  $('a-out').onclick = () => moveArc(1);
+  $('a-ccw').onclick = () => turnArc(-15);
+  $('a-cw').onclick = () => turnArc(15);
+  $('a-font').onchange = () => { const f = $('a-font').value; ensureFont(f).then(() => setArc({ font: f })); };
+  $('a-size').onchange = () => setArc({ size: Math.max(2, num('a-size') || 10) });
+  $('a-color').oninput = () => setArc({ fill: $('a-color').value }, false);
+  $('a-color').onchange = () => pushHistory();
+  $('a-spacing').onchange = () => setArc({ spacing: num('a-spacing') || 0 });
+  $('a-straight').onclick = straighten;
+  $('t-curve-up').onclick = () => curveText('up');
+  $('t-curve-down').onclick = () => curveText('down');
+  canvas.on('mouse:dblclick', (e) => { if (e.target && e.target.kind === 'arc') { $('right').classList.add('open'); $('a-text').focus(); $('a-text').select(); } });
 
   // ---- Tables
   const TB = () => { const o = active(); return o && o.kind === 'table' ? o : null; };
@@ -2634,12 +2851,13 @@ ${shape}${bwOpen}`);
       <li>Change the details on the right: font and size for text, type and data for barcodes, exact position and size in ${unit}.</li>
       <li>The dashed red line marks the safe printing area. Keep important content inside it.</li></ol>
     <h3>Formatting text</h3><p>Select a text item and use the <b>Text</b> tab or the panel on the right: font, size, bold, italic, underline, strikethrough, overline, superscript, subscript, colour, highlight, outline, case, alignment, bullets and numbering. To format only some words, double-click the text on the label, select the words, then choose the formatting. <b>Wrap in a box</b> keeps text to a set width; <b>Fit to label</b> makes it exactly as wide as the label.</p>
+    <h3>Curved text (CDs, DVDs and round labels)</h3><p>Choose <b>Curve up</b> or <b>Curve down</b> on the Text tab. Selected text bends around the centre of the label; with nothing selected, new curved text is added. Drag it on the label to slide it around the centre or toward and away from it, use the round handle to turn it around the centre, or use the sliders on the right (distance, position, spread). <b>Straighten</b> turns it back into normal text.</p>
     <h3>Tables and 2D codes</h3><p><b>Insert › Table</b> adds a grid you type into on the right (double-click the table to start typing). <b>Insert › PDF417</b>, Data Matrix, Aztec and Micro PDF417 add 2D codes that hold much more than a normal barcode.</p>
     <h3>Colour or black &amp; white</h3><p>Thermal label printers (Dymo, Brother, Zebra) print only black, so their labels start in <b>Black &amp; white</b> and the preview shows it. Sheet labels start in <b>Full colour</b> for inkjet and colour laser printers. Switch any time under <b>Print colour</b> on the right or on the Home tab.</p>
     <h3>Sheets for laser and inkjet printers</h3><p>Pick an Avery code (searching for any compatible code works, for example 8160 finds 5160) or a form from <b>Laser and inkjet forms</b>. <b>Print</b> then fills a whole sheet, or prints a few labels starting at any position so you can use up a partly used sheet. Use <b>Custom size › Sheet of labels</b> for any other sheet.</p>
     <h3>CDs, DVDs and cases</h3><p><b>CD and DVD labels</b> are discs with the centre hole cut out (Avery 8931 / L7676, full-face labels, printable discs and mini CDs). <b>CD and DVD case inserts</b> cover jewel case fronts, folded booklets, tray cards with both spines, and DVD, slim DVD and Blu-ray covers. Blue dashed lines show where the paper folds (spines); they are not printed. Inserts print with cut marks and fold marks so you can trim them.</p>
     <h3>3. Print or export</h3><p><b>File › Print</b> sends the label at its real size to your label printer. In the print window, choose your printer and its label size, and set scale to 100% (Actual size). <b>Export</b> saves PNG, JPG or SVG at your printer's resolution.</p>`;
-  const aboutHtml = `<p><b>LabelCraft</b> · version 0.3</p><p>A label designer for Dymo, Brother, Zebra and Avery sheet labels, in full colour or black &amp; white, running in your browser.</p>
+  const aboutHtml = `<p><b>LabelCraft</b> · version 0.4</p><p>A label designer for Dymo, Brother, Zebra and Avery sheet labels, in full colour or black &amp; white, running in your browser.</p>
     <p>Built with <a href="https://fabricjs.com" target="_blank" rel="noopener">Fabric.js</a> 5.3 (MIT), <a href="https://github.com/lindell/JsBarcode" target="_blank" rel="noopener">JsBarcode</a> 3.11 (MIT) and <a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener">qrcode-generator</a> 1.4 (MIT) and <a href="https://github.com/metafloor/bwip-js" target="_blank" rel="noopener">bwip-js</a> 4.10 (MIT) for PDF417, Data Matrix and Aztec.</p>
     <p style="color:var(--muted)">Label names and codes are used only to identify compatible sizes. Check measurements against your own stock before printing large runs.</p>`;
 
@@ -2715,6 +2933,7 @@ ${shape}${bwOpen}`);
       { label: 'Micro PDF417 code', run: () => addCode('MICROPDF417') },
       '-',
       { label: 'Table', run: addTable },
+      { label: 'Curved text', run: () => { canvas.discardActiveObject(); curveText('up'); } },
       '-',
       { label: 'Box', run: addRect },
       { label: 'Ellipse', run: addEllipse },
@@ -2722,17 +2941,17 @@ ${shape}${bwOpen}`);
       { label: 'Image or logo…', run: () => imageInput.click() },
     ]],
     ['Format', [
-      { label: 'Bold', key: 'Ctrl+B', run: () => toggleStyle('fontWeight', 'bold', 'normal'), disabled: () => !T(), checked: () => !!T() && styleOf(T(), 'fontWeight') === 'bold' },
-      { label: 'Italic', key: 'Ctrl+I', run: () => toggleStyle('fontStyle', 'italic', 'normal'), disabled: () => !T(), checked: () => !!T() && styleOf(T(), 'fontStyle') === 'italic' },
+      { label: 'Bold', key: 'Ctrl+B', run: () => toggleStyle('fontWeight', 'bold', 'normal'), disabled: () => !TX(), checked: () => !!TX() && styleOf(TX(), 'fontWeight') === 'bold' },
+      { label: 'Italic', key: 'Ctrl+I', run: () => toggleStyle('fontStyle', 'italic', 'normal'), disabled: () => !TX(), checked: () => !!TX() && styleOf(TX(), 'fontStyle') === 'italic' },
       { label: 'Underline', key: 'Ctrl+U', run: () => toggleStyle('underline', true, false), disabled: () => !T(), checked: () => !!T() && !!styleOf(T(), 'underline') },
       { label: 'Strikethrough', run: () => toggleStyle('linethrough', true, false), disabled: () => !T(), checked: () => !!T() && !!styleOf(T(), 'linethrough') },
       { label: 'Overline', run: () => toggleStyle('overline', true, false), disabled: () => !T(), checked: () => !!T() && !!styleOf(T(), 'overline') },
       { label: 'Superscript', run: () => setScript(-1), disabled: () => !T(), checked: () => !!T() && isScript(T(), -1) },
       { label: 'Subscript', run: () => setScript(1), disabled: () => !T(), checked: () => !!T() && isScript(T(), 1) },
       '-',
-      { label: 'Bigger text', key: 'Ctrl+]', run: () => stepSize(1), disabled: () => !T() },
-      { label: 'Smaller text', key: 'Ctrl+[', run: () => stepSize(-1), disabled: () => !T() },
-      { label: 'Clear formatting', run: clearFormat, disabled: () => !T() },
+      { label: 'Bigger text', key: 'Ctrl+]', run: () => stepSize(1), disabled: () => !TX() },
+      { label: 'Smaller text', key: 'Ctrl+[', run: () => stepSize(-1), disabled: () => !TX() },
+      { label: 'Clear formatting', run: clearFormat, disabled: () => !TX() },
       '-',
       { heading: 'Change case' },
       { label: 'UPPERCASE', run: () => changeCase('upper'), disabled: () => !T() },
@@ -2747,6 +2966,19 @@ ${shape}${bwOpen}`);
       { label: 'Justify', run: () => txt((o) => o.set('textAlign', 'justify')), disabled: () => !T(), checked: () => T()?.textAlign === 'justify' },
       { label: 'Bullets', run: () => toggleList('bullets'), disabled: () => !T(), checked: () => !!T() && listState(T()) === 'bullets' },
       { label: 'Numbering', run: () => toggleList('numbers'), disabled: () => !T(), checked: () => !!T() && listState(T()) === 'numbers' },
+      '-',
+      { heading: 'Curved text' },
+      { label: 'Curve up', run: () => curveText('up'), checked: () => A()?.arc.dir === 'up' },
+      { label: 'Curve down', run: () => curveText('down'), checked: () => A()?.arc.dir === 'down' },
+      { label: 'Straighten curved text', run: straighten, disabled: () => !A() },
+      { label: 'Move in toward the centre', run: () => moveArc(-1), disabled: () => !A() },
+      { label: 'Move out from the centre', run: () => moveArc(1), disabled: () => !A() },
+      { label: 'Turn around the centre left', run: () => turnArc(-15), disabled: () => !A() },
+      { label: 'Turn around the centre right', run: () => turnArc(15), disabled: () => !A() },
+      '-',
+      { heading: 'Effects' },
+      { label: 'Shadow', run: toggleShadow, disabled: () => !TX(), checked: hasShadow },
+      { label: 'Outline', run: toggleOutline, disabled: () => !TX(), checked: hasOutline },
       '-',
       { label: 'Wrap text in a box', run: () => setWrap(T()?.type !== 'textbox'), disabled: () => !T(), checked: () => T()?.type === 'textbox' },
       { label: 'Fit text to label', run: fitToLabel, disabled: () => !T() },
@@ -2852,6 +3084,10 @@ ${shape}${bwOpen}`);
     if (mod && k === 'p') { e.preventDefault(); printLabel(); return; }
     // Text formatting shortcuts, while editing text or with a text item selected.
     const tx = T();
+    if (mod && TX() && !tx && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) {
+      const f = { b: () => toggleStyle('fontWeight', 'bold', 'normal'), i: () => toggleStyle('fontStyle', 'italic', 'normal'), ']': () => stepSize(1), '[': () => stepSize(-1) }[k];
+      if (f) { e.preventDefault(); f(); return; }
+    }
     if (mod && tx && (tx.isEditing || !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) {
       const f = { b: () => toggleStyle('fontWeight', 'bold', 'normal'), i: () => toggleStyle('fontStyle', 'italic', 'normal'), u: () => toggleStyle('underline', true, false),
         ']': () => stepSize(1), '[': () => stepSize(-1) }[k];
@@ -2920,10 +3156,68 @@ ${shape}${bwOpen}`);
       numbers: '<path d="M4 5h1.5v4M4 9h3M4 14.5c0-1 2.8-1 2.8.4 0 1-2.8 1.6-2.8 3.1h3M10 7h10M10 12h10M10 17h10"/>' };
     const PDF_ICON = '<path d="M3 5v14M5 5v14M7 5v14"/><path d="M10 6h2v3h-2zM13 6h4v3h-4zM10 10.5h4v3h-4zM15 10.5h2v3h-2zM10 15h2v3h-2zM13 15h4v3h-4z" class="fill"/><path d="M19 5v14M21 5v14"/>';
     const FONT_BOX = document.createElement('div'); FONT_BOX.className = 'rb-font';
-    FONT_BOX.innerHTML = `<select aria-label="Font">${FONTS.map((f) => `<option style="font-family:'${f}'">${f}</option>`).join('')}</select><input type="number" min="2" step="0.5" list="t-sizes" aria-label="Font size (pt)" title="Font size (pt)">`;
-    FONT_BOX.querySelector('select').onchange = (e) => { $('t-font').value = e.target.value; $('t-font').onchange(); };
-    FONT_BOX.querySelector('input').onchange = (e) => { $('t-size').value = e.target.value; $('t-size').onchange(); };
+    FONT_BOX.innerHTML = `<select aria-label="Font">${FONTS.map((f) => `<option style="font-family:'${f}'">${f}</option>`).join('')}</select><div class="rb-row"><input type="number" min="2" step="0.5" list="t-sizes" aria-label="Font size (pt)" title="Font size (pt)"><button type="button" class="crb-small" data-step="1" title="Bigger text (Ctrl+])">A<sup>+</sup></button><button type="button" class="crb-small" data-step="-1" title="Smaller text (Ctrl+[)">A<sup>−</sup></button></div>`;
+    FONT_BOX.querySelectorAll('[data-step]').forEach((b) => { b.addEventListener('mousedown', (e) => e.preventDefault()); b.onclick = () => stepSize(+b.dataset.step); });
+    FONT_BOX.querySelector('select').onchange = (e) => { const f = e.target.value; ensureFont(f).then(() => setStyle({ fontFamily: f })); };
+    FONT_BOX.querySelector('input').onchange = (e) => setStyle({ fontSize: ptToPx(Math.max(2, +e.target.value || 12)) });
     FONT_BOX.addEventListener('mousedown', (e) => { if (e.target === FONT_BOX) e.preventDefault(); });
+    // Word-style colour buttons: pick from a palette, "None", or any colour.
+    const PALETTE = ['#000000', '#404040', '#7f7f7f', '#bfbfbf', '#ffffff', '#c8322b', '#e07a1f', '#f2c200', '#1e8a4c', '#138a9e', '#1f5fbf', '#7b4fd6', '#d1408a', '#8b5a2b',
+      '#fff176', '#a5f3a1', '#9be7ff', '#ffb3d9', '#ffcc80', '#d9d9d9', '#b3c7ff'];
+    let pop = null;
+    const closePop = () => { if (pop) { pop.remove(); pop = null; } };
+    document.addEventListener('mousedown', (e) => { if (pop && !pop.contains(e.target) && !e.target.closest('.rb-color')) closePop(); });
+    function colorButton(label, icon, start, none, apply) {
+      const b = document.createElement('button');
+      b.className = 'crb-small rb-color'; b.type = 'button'; b.title = label;
+      b.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg><span>${label}</span><i class="rb-bar"></i>`;
+      const bar = b.querySelector('.rb-bar'); bar.style.background = start;
+      const pick = (c) => { closePop(); if (c) bar.style.background = c; apply(c); };
+      b.addEventListener('mousedown', (e) => e.preventDefault());
+      b.onclick = () => {
+        if (pop) { closePop(); return; }
+        pop = document.createElement('div'); pop.className = 'rb-pop';
+        pop.innerHTML = `<h6>${label}</h6><div class="sw">${PALETTE.map((c) => `<button type="button" title="${c}" data-c="${c}" style="background:${c}"></button>`).join('')}</div>
+          <div class="act">${none ? '<button type="button" data-none>None</button>' : ''}<label>More colours…<input type="color"></label></div>`;
+        pop.addEventListener('mousedown', (e) => { if (!e.target.matches('input')) e.preventDefault(); });
+        pop.onclick = (e) => { const s = e.target.closest('[data-c]'); if (s) pick(s.dataset.c); if (e.target.closest('[data-none]')) pick(''); };
+        pop.querySelector('input').onchange = (e) => pick(e.target.value);
+        document.body.append(pop);
+        const r = b.getBoundingClientRect();
+        pop.style.left = Math.max(8, Math.min(innerWidth - 222, r.left)) + 'px'; pop.style.top = (r.bottom + 4) + 'px';
+      };
+      return b;
+    }
+    const COLOR_TEXT = colorButton('Text colour', '<path d="M6 17 12 4l6 13M8.5 12h7"/>', '#c8322b', false, (c) => setStyle({ fill: c }));
+    const COLOR_HL = colorButton('Highlight', '<path d="m9 15 6-6 3 3-6 6H9Z"/><path d="m15 9 2-2 3 3-2 2"/>', '#fff176', true, (c) => setStyle({ textBackgroundColor: c }));
+    const COLOR_LINE = colorButton('Outline colour', '<path d="M6 17 12 4l6 13M8.5 12h7" stroke-dasharray="2 1.6"/>', '#ffffff', true, (c) => {
+      if (c) lastOutline = c;
+      const o = TX(); if (!o) return;
+      if (!c) setStyle({ stroke: null, strokeWidth: 0 });
+      else { if (o.kind !== 'arc') o.set('paintFirst', 'stroke'); setStyle({ stroke: c, strokeWidth: styleOf(o, 'strokeWidth') || px(0.25) }); }
+    });
+    const smallSelect = (label, options, apply) => {
+      const el = document.createElement('select'); el.className = 'rb-sel'; el.title = label; el.setAttribute('aria-label', label);
+      el.innerHTML = `<option value="">${label}…</option>` + options.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
+      el.onchange = () => { const v = el.value; el.value = ''; if (v !== '') apply(v); };
+      return el;
+    };
+    const LINE_SP = smallSelect('Line spacing', [['0.85', 'Tight (0.85)'], ['1', 'Single (1.0)'], ['1.15', '1.15'], ['1.5', '1.5'], ['2', 'Double (2.0)']],
+      (v) => txt((o) => o.set('lineHeight', +v)));
+    const LETTER_SP = smallSelect('Letter spacing', [['-60', 'Tight'], ['0', 'Normal'], ['100', 'Wide'], ['250', 'Wider'], ['500', 'Widest']],
+      (v) => { if (A()) setArc({ spacing: +v }); else txt((o) => o.set('charSpacing', +v)); });
+    const INSERT_SEL = smallSelect('Symbol or date', [['date', 'Today’s date'], ['time', 'The time'], ...SYMBOLS.map((c) => [c, c])],
+      (v) => { const now = new Date(); insertText(v === 'date' ? now.toLocaleDateString() : v === 'time' ? now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : v); });
+    function invertText() { const o = T(); if (!o) return; $('t-invert').checked = !o.invert; $('t-invert').onchange(); }
+    const FX = {
+      shadow: '<path d="M6 17 11 5l5 12M8 12.5h6"/><path d="M9 19h9l-2-5" opacity=".45"/>',
+      outline: '<path d="M6 17 12 4l6 13M8.5 12h7" stroke-dasharray="2 1.6"/>',
+      invert: '<rect x="3" y="5" width="18" height="14" rx="2" class="fill"/><path d="M8 15l4-8 4 8M9.5 12.5h5"/>',
+      up: '<path d="M4 17a8 8 0 0 1 16 0"/><path d="M7.2 10.6 6 9.2M12 9V7M16.8 10.6 18 9.2"/>',
+      down: '<path d="M4 7a8 8 0 0 0 16 0"/><path d="M7.2 13.4 6 14.8M12 15v2M16.8 13.4 18 14.8"/>',
+      in: '<circle cx="12" cy="12" r="2" class="fill"/><path d="M3 12h5M21 12h-5M6 9.5 8.5 12 6 14.5M18 9.5 15.5 12l2.5 2.5"/>',
+      out: '<circle cx="12" cy="12" r="2" class="fill"/><path d="M3 12h6M21 12h-6M5.5 9.5 3 12l2.5 2.5M18.5 9.5 21 12l-2.5 2.5"/>',
+    };
     const COLOR_ICON = '<circle cx="9" cy="9" r="5" fill="#e0483e" stroke="none"/><circle cx="15" cy="9" r="5" fill="#2f8be0" stroke="none" opacity=".85"/><circle cx="12" cy="14.5" r="5" fill="#f2c200" stroke="none" opacity=".85"/>';
     const BW_ICON = '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor"/>';
     const st = document.createElement('style');
@@ -2955,11 +3249,17 @@ ${shape}${bwOpen}`);
         { id: 'text', label: 'Text', hue: '#2f6fdd', groups: [
           ['Font', [{ el: FONT_BOX }, { col: [C('Bold', 'Bold', TXT('B', 'font-weight:700')), C('Italic', 'Italic', TXT('I', 'font-style:italic;font-family:Georgia,serif')), C('Underline', 'Underline', TXT('U', 'text-decoration:underline'))] },
             { col: [C('Strikethrough', 'Strikethrough', TXT('S', 'text-decoration:line-through')), C('Superscript', 'Superscript', TXT('x²')), C('Subscript', 'Subscript', TXT('x₂'))] },
-            { col: [C('Bigger text', 'Bigger', TXT('A+')), C('Smaller text', 'Smaller', TXT('A−')), C('Clear formatting', 'Clear formatting', I.clear)] }]],
-          ['Case', [{ col: [C('UPPERCASE', 'UPPERCASE', TXT('AB')), C('lowercase', 'lowercase', TXT('ab')), C('Title Case', 'Title Case', TXT('Ab'))] }]],
+            { col: [{ el: COLOR_TEXT }, { el: COLOR_HL }, { el: COLOR_LINE }] }]],
+          ['Effects', [{ col: [C('Shadow', 'Shadow', FX.shadow), C('Outline', 'Outline', FX.outline), B('White on black', FX.invert, invertText, { pressed: () => !!T()?.invert, disabled: () => !T() })] },
+            { col: [C('UPPERCASE', 'UPPERCASE', TXT('AB')), C('Title Case', 'Title Case', TXT('Ab')), C('Clear formatting', 'Clear formatting', I.clear)] }]],
           ['Paragraph', [{ col: [C('Align left', 'Left', ALIGN.left), C('Align centre', 'Centre', ALIGN.center), C('Align right', 'Right', ALIGN.right)] },
-            { col: [C('Justify', 'Justify', ALIGN.justify), C('Bullets', 'Bullets', ALIGN.bullets), C('Numbering', 'Numbering', ALIGN.numbers)] }]],
-          ['Text box', [C('Wrap text in a box', 'Wrap in a box', I.box, { big: true }), C('Fit text to label', 'Fit to label', I.fit, { big: true })]],
+            { col: [C('Justify', 'Justify', ALIGN.justify), C('Bullets', 'Bullets', ALIGN.bullets), C('Numbering', 'Numbering', ALIGN.numbers)] },
+            { col: [{ el: LINE_SP }, { el: LETTER_SP }] }]],
+          ['Curved text', [C('Curve up', 'Curve up', FX.up, { big: true, title: 'Bend text around the centre of the label, along the top (great for CDs and round labels)' }),
+            C('Curve down', 'Curve down', FX.down, { big: true, title: 'Bend text around the centre, along the bottom' }),
+            { col: [C('Move in toward', 'Move in', FX.in), C('Move out from', 'Move out', FX.out), C('Straighten curved', 'Straighten', I.line)] },
+            { col: [C('Turn around the centre left', 'Turn left', I.rotL), C('Turn around the centre right', 'Turn right', I.rotR), C('Insert today', 'Date', I.calendar)] }]],
+          ['Box and insert', [{ col: [C('Wrap text in a box', 'Wrap in a box', I.box), C('Fit text to label', 'Fit to label', I.fit), { el: INSERT_SEL }] }]],
         ] },
         { id: 'arrange', label: 'Arrange', hue: '#e07a1f', groups: [
           ['Rotate', [B('Rotate left', I.rotL, click('rot-ccw'), { big: true, title: 'Rotate 90° left (Shift+R)' }), B('Rotate right', I.rotR, click('rot-cw'), { big: true, title: 'Rotate 90° right (R)' }), B('Rotate 180°', I.rot180, click('rot-180'), { big: true })]],

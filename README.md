@@ -42,6 +42,11 @@ Your label also autosaves in the browser.
 
 ### Design
 - **Text, formatted like a word processor** (Text tab, Format menu or the panel on the right): 29 fonts (Barlow Condensed, Oswald, Roboto Mono and Archivo Black bundled, plus common Windows and Mac fonts), size with bigger / smaller, **bold, italic, underline, strikethrough, overline, superscript, subscript**, text colour, **highlight**, text **outline**, change case (UPPERCASE, lowercase, Title Case, Sentence case), clear formatting, align left / centre / right / **justify**, **bullets and numbering**, letter spacing and line height.
+- **Curved text** for CDs, DVDs and round labels: **Curve up** (along the top) or **Curve down** (along the bottom, reading left to right) around the centre of the label. Drag it to slide it around the centre or in and out, turn it with the round handle, or use the sliders for distance, position and spread. Bold, italic, colour, outline and shadow work on it too; **Straighten** turns it back into normal text.
+
+  ![Curved text on a CD label](docs/curved-text.png)
+
+- **Word-style Text tab**: font and size with bigger / smaller, colour buttons with a palette (text colour, highlight, outline colour), effects (shadow, outline, white on black), case, alignment, bullets, numbering, line spacing and letter spacing.
 - **Format just some words**: double-click the text on the label, select the words, then pick the formatting (Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+] and Ctrl+[ work too).
 - **Wrap text in a box** of a set width, **Fit to label** width, and insert today's date, the time or symbols (© ® ™ ° ± € ✓ ★ ⚠ …).
 - **Tables**: type into a grid in the side panel (double-click the table to start), add or delete rows and columns, heading row, font, size, alignment, grid lines, padding; resize by dragging and text shrinks to fit each cell.
