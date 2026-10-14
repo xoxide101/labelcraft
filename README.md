@@ -27,12 +27,14 @@ Your label also autosaves in the browser.
 
 ## What it does
 
-### Label stock (70 sizes built in)
+### Label stock (100+ sizes built in)
 - **Dymo LabelWriter** (30252 address, 30334 multipurpose, 30256 shipping…)
 - **Dymo D1** tape
 - **Brother DK** rolls and **Brother TZe** tape
 - **Zebra / thermal** labels
-- **Avery** sheets (US Letter and A4)
+- **Avery** sheets for laser and inkjet printers, with their real sheet layouts: 22 US Letter templates (5160, 5161, 5162, 5163, 5164, 5167, 5195, 5366, 5395, 5371, round and square labels…) and 20 A4 templates (L7160/J8160, L7163, L7165, L7651…). **Search for any compatible code**: 8160, 5960, 18160 and 40 other codes all find 5160.
+- **Laser and inkjet forms**: full, half, quarter and sixth sheets on Letter, A4 (A5, A6, A7) and Legal, plus two 4 × 6 in shipping labels per page.
+- **Custom sheet** for any other sheet: label size, page (Letter, A4, Legal), labels across and down, gaps.
 - **Custom size** in mm or inches: rounded or square corners, round / oval, or continuous tape (set the tape length).
 - **Turn label 90°** turns the whole label sideways, content and all.
 
@@ -62,8 +64,13 @@ Barcodes are drawn as exact vector bars at the size you set, so they never get b
 ### Save, print and export
 - **Save / Open** label files (`.json`), so you can reuse and edit labels later.
 - **Print** at the label's real size.
+- **Print sheets** for laser and inkjet: full sheets, or just some labels **starting at any position** (click the spot on the sheet picture), so partly used sheets are not wasted. Optional label outlines for a test on plain paper, and a **printer adjustment** (move right / down) that is remembered. Sheets can also be saved as 300 DPI PNG pages.
+- **Full colour or black & white**: thermal printer labels start in black & white and the preview shows what prints (colours become black, white or a fine dot pattern; text and barcodes stay crisp). Sheet labels start in full colour; pick any colour for text, fills and outlines, and set a label colour for coloured stock.
+
+![Printing a sheet of Avery 5160 labels, starting at label 8](docs/sheet-print.png)
+
 - **Export** as **PNG**, **JPG** or **SVG** at **203, 300 or 600 DPI** (203 and 300 match most label printers).
-- Light and dark mode for the editor (labels always print black on white).
+- Light and dark mode for the editor (the theme never changes what prints).
 
 ## Keyboard shortcuts
 

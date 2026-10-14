@@ -159,10 +159,28 @@ input[type="color"].input { padding: 2px; height: 30px; }
 .toast { position: fixed; left: 50%; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--panel); padding: 9px 14px; border-radius: 7px; font-weight: 500; box-shadow: 0 6px 20px rgba(0,0,0,.25); z-index: 3000; max-width: calc(100% - 32px); }
 
 #print-area { display: none; }
+.label-frame.bw .lower-canvas { filter: grayscale(1) contrast(1.2); }
+.cpick { display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: 4px; }
+.cpick select { min-width: 0; }
+.cpick input[type="color"] { width: 34px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
+.row > .field { min-width: 0; }
+.cpick input[type="color"] { padding: 2px; height: 30px; }
+.sheet-dlg { width: min(760px, 100%); }
+.sheet-wrap { display: grid; grid-template-columns: 250px 1fr; gap: 18px; align-items: start; }
+.sheet-prev { position: relative; width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 3px; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+.sheet-prev button { position: absolute; padding: 0; margin: 0; border: 1px dashed #b8bec9; background: #fff center / contain no-repeat; cursor: pointer; box-sizing: border-box; border-radius: 2px; }
+.sheet-prev button.round { border-radius: 50%; }
+.sheet-prev button.used { background-color: #e4e6eb; background-image: none !important; border-style: solid; }
+.sheet-prev button.print { border: 1px solid var(--accent); }
+.sheet-prev button.empty { background-image: none !important; }
+.sheet-prev button:hover { outline: 2px solid var(--accent); }
+.sheet-pages { font-size: 12px; color: var(--muted); margin-top: 8px; text-align: center; }
+@media (max-width: 640px) { .sheet-wrap { grid-template-columns: 1fr; } .sheet-prev { max-width: 260px; margin: 0 auto; } }
 @media print {
   body > *:not(#print-area) { display: none !important; }
   #print-area { display: block !important; }
   #print-area img { display: block; }
+  #print-area img + img { break-before: page; page-break-before: always; }
   body { background: #fff; overflow: visible; }
 }
 
@@ -243,8 +261,20 @@ input[type="color"].input { padding: 2px; height: 30px; }
           <label class="field"><span id="ch-label">Height (mm)</span><input class="input" type="number" id="custom-h" min="5" max="1000" step="0.1" value="30"></label>
         </div>
         <label class="field"><span>Shape</span>
-          <select class="input" id="custom-shape"><option value="rect">Rectangle, rounded corners</option><option value="square">Rectangle, square corners</option><option value="round">Round / oval</option><option value="tape">Continuous tape</option></select>
+          <select class="input" id="custom-shape"><option value="rect">Rectangle, rounded corners</option><option value="square">Rectangle, square corners</option><option value="round">Round / oval</option><option value="tape">Continuous tape</option><option value="sheet">Sheet of labels (laser or inkjet)</option><option value="sheet-round">Sheet of round labels</option></select>
         </label>
+        <div id="custom-sheet" hidden>
+          <div class="row">
+            <label class="field"><span>Page</span><select class="input" id="cs-page"><option>Letter</option><option>A4</option><option>Legal</option></select></label>
+            <label class="field"><span>Labels across</span><input class="input" type="number" id="cs-cols" min="1" max="30" value="3"></label>
+          </div>
+          <div class="row">
+            <label class="field"><span>Labels down</span><input class="input" type="number" id="cs-rows" min="1" max="60" value="10"></label>
+            <label class="field"><span id="cs-gx-l">Gap across (mm)</span><input class="input" type="number" id="cs-gx" min="0" step="0.1" value="0"></label>
+          </div>
+          <label class="field"><span id="cs-gy-l">Gap down (mm)</span><input class="input" type="number" id="cs-gy" min="0" step="0.1" value="0"></label>
+          <p class="hint">The labels are centred on the page. Fine-tune with Printer adjustment when you print.</p>
+        </div>
         <button class="btn outline" id="custom-apply">Use custom size</button>
       </div>
     </aside>
@@ -268,6 +298,18 @@ input[type="color"].input { padding: 2px; height: 30px; }
           <div class="row">
             <button class="btn outline" id="label-rotate" title="Turn the label sideways, content and all">Turn label 90°</button>
             <button class="btn outline" id="label-clear">Clear label</button>
+          </div>
+          <h3>Print colour</h3>
+          <div class="seg" role="group" aria-label="Print colour">
+            <button class="btn" id="mode-color" aria-pressed="false" title="For inkjet and colour laser printers">Full colour</button>
+            <button class="btn" id="mode-bw" aria-pressed="false" title="For thermal label printers and black-only laser printers">Black &amp; white</button>
+          </div>
+          <p class="hint" id="mode-hint"></p>
+          <label class="field" id="l-bg-f"><span>Label colour (for coloured label stock)</span><input class="input" type="color" id="l-bg"></label>
+          <div id="sheet-sec" hidden>
+            <h3>Sheet</h3>
+            <p class="hint" id="sheet-desc"></p>
+            <button class="btn outline" id="sheet-print">Print sheet…</button>
           </div>
         </div>
       </div>
@@ -350,9 +392,9 @@ input[type="color"].input { padding: 2px; height: 30px; }
 
         <div class="sec" id="p-shape" hidden>
           <h3>Shape</h3>
-          <div class="row">
-            <label class="field"><span>Fill</span><select class="input" id="s-fill"><option value="none">None</option><option value="#000000">Black</option><option value="#ffffff">White</option><option value="#c8322b">Red</option><option value="#808080">Grey</option></select></label>
-            <label class="field"><span>Outline</span><select class="input" id="s-stroke"><option value="none">None</option><option value="#000000">Black</option><option value="#ffffff">White</option><option value="#c8322b">Red</option></select></label>
+          <div style="display:grid;gap:8px">
+            <div class="field"><span>Fill</span><div class="cpick"><select class="input" id="s-fill" aria-label="Fill"></select><input type="color" id="s-fill-c" aria-label="Fill colour" title="Pick any colour"></div></div>
+            <div class="field"><span>Outline</span><div class="cpick"><select class="input" id="s-stroke" aria-label="Outline"></select><input type="color" id="s-stroke-c" aria-label="Outline colour" title="Pick any colour"></div></div>
           </div>
           <div class="row">
             <label class="field"><span>Outline width (mm)</span><input class="input" type="number" step="0.1" min="0" id="s-sw"></label>
@@ -384,6 +426,7 @@ input[type="color"].input { padding: 2px; height: 30px; }
     <span><b id="st-stock">—</b></span>
     <span class="num" id="st-size"></span>
     <span class="num hide-sm" id="st-px"></span>
+    <span class="hide-sm" id="st-mode"></span>
     <span class="hide-sm" id="st-save">Autosaves in this browser</span>
   </footer>
 </div>
@@ -413,6 +456,40 @@ input[type="color"].input { padding: 2px; height: 30px; }
       <span class="out-size" id="ex-size"></span>
     </div>
     <div class="dialog-actions"><button class="btn" id="ex-cancel">Cancel</button><button class="btn primary" id="ex-go">Export</button></div>
+  </div>
+</div>
+
+<!-- Sheet print dialog (laser and inkjet sheets) -->
+<div class="backdrop" id="sheet" hidden>
+  <div class="dialog sheet-dlg" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <h2 id="sheet-title">Print a sheet of labels</h2>
+    <p id="sh-desc"></p>
+    <div class="sheet-wrap">
+      <div>
+        <div class="sheet-prev" id="sh-prev" role="group" aria-label="Sheet preview. Click a label to start printing there."></div>
+        <div class="sheet-pages" id="sh-pages"></div>
+      </div>
+      <div class="dialog-body">
+        <div class="field"><span>What to print</span>
+          <label class="check"><input type="radio" name="sh-what" value="full" checked> Full sheets of this label</label>
+          <label class="check"><input type="radio" name="sh-what" value="some"> Some labels, starting at a position</label>
+        </div>
+        <label class="field" id="sh-full-f"><span>Number of sheets</span><input class="input" type="number" id="sh-sheets" min="1" max="20" value="1"></label>
+        <div class="row" id="sh-some-f" hidden>
+          <label class="field"><span>How many labels</span><input class="input" type="number" id="sh-count" min="1" value="1"></label>
+          <label class="field"><span>Start at label</span><input class="input" type="number" id="sh-start" min="1" value="1"></label>
+        </div>
+        <p class="hint" id="sh-some-hint" hidden>Click a label in the picture to start there. The grey ones are skipped, so you can use up a sheet that is partly used.</p>
+        <label class="check"><input type="checkbox" id="sh-outline"> Draw the label outlines (for a test on plain paper)</label>
+        <h3 style="margin:8px 0 0;font-size:12px">Printer adjustment</h3>
+        <div class="row">
+          <label class="field"><span>Move right (mm)</span><input class="input" type="number" id="sh-dx" step="0.1" value="0"></label>
+          <label class="field"><span>Move down (mm)</span><input class="input" type="number" id="sh-dy" step="0.1" value="0"></label>
+        </div>
+        <p class="hint" id="sh-tip"></p>
+      </div>
+    </div>
+    <div class="dialog-actions"><button class="btn" id="sh-cancel">Cancel</button><button class="btn" id="sh-png">Save as PNG</button><button class="btn primary" id="sh-go">Print</button></div>
   </div>
 </div>
 
@@ -1007,6 +1084,81 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // Label stock catalogue (sizes as width × height in mm, shown landscape
   // where the label feeds that way).
   // =====================================================================
+  // Sheet labels for laser and inkjet printers. Each row: code, name, label width, height, labels across,
+  // down, top margin, left margin, distance from one label to the next across and down (margins left out =
+  // centred on the page), other product codes with the same layout, shape. Inches for US sheets, mm for A4.
+  const PAGES = { Letter: [215.9, 279.4], Legal: [215.9, 355.6], A4: [210, 297] };
+  const sheets = (page, u, rows) => rows.map(([code, name, w, h, cols, down, top, left, hp, vp, also = '', shape = 'rect']) => {
+    const [pw, ph] = PAGES[page], k = u === 'in' ? 25.4 : 1, W = w * k, H = h * k;
+    const sheet = { page, pw, ph, cols, rows: down, lw: W, lh: H, hp: hp * k, vp: vp * k, approx: top == null,
+      left: left == null ? (pw - (hp * k * (cols - 1) + W)) / 2 : left * k,
+      top: top == null ? (ph - (vp * k * (down - 1) + H)) / 2 : top * k };
+    return { code, name, w: W, h: H, shape, sheet, also };
+  });
+  const AVERY_US = sheets('Letter', 'in', [
+    ['5160', 'Address, 30 per sheet', 2.625, 1, 3, 10, 0.5, 0.1875, 2.75, 1, '5260 5520 5630 5660 5810 5960 5970 5971 5972 5979 5980 6240 6970 8160 8250 8460 8660 8810 8920 15160 15660 15960 16460 18160 18260 18660 22837 28660 32660 38260 45160 48160 48260 48360 48460 48860 48960 55160 58160 58660 80509 85560 88560 95520'],
+    ['5161', 'Address, 20 per sheet', 4, 1, 2, 10, 0.5, 0.15625, 4.1875, 1, '5261 5961 8161 18161 55161'],
+    ['5162', 'Address, 14 per sheet', 4, 1.333, 2, 7, 0.833, 0.15625, 4.1875, 1.333, '5262 5522 5662 5962 8162 8252 8462 15162 15662 18162 18662 45162 48462 48862 55162 58162'],
+    ['5159', 'Address, 14 per sheet (1.5 in tall)', 4, 1.5, 2, 7, 0.25, 0.15625, 4.1875, 1.5, '8159'],
+    ['5163', 'Shipping, 10 per sheet', 4, 2, 2, 5, 0.5, 0.15625, 4.1875, 2, '5263 5523 5663 5963 8163 8253 8463 8663 15163 15513 18163 18663 38363 48163 48463 48863 55163 58163 85563 95523'],
+    ['5164', 'Shipping, 6 per sheet', 4, 3.333, 2, 3, 0.5, 0.15625, 4.1875, 3.333, '5264 5524 8164 8254 8464 45464 48464 55164'],
+    ['5168', 'Shipping, 4 per sheet', 3.5, 5, 2, 2, 0.5, 0.5, 4, 5, '5268 5278 8168'],
+    ['5126', 'Shipping, half sheet, 2 per sheet', 8.5, 5.5, 1, 2, 0, 0, 8.5, 5.5, '5526 8126 15516 18126 85776', 'square'],
+    ['5165', 'Full sheet', 8.5, 11, 1, 1, 0, 0, 8.5, 11, '5265 8165 8255 8465 15265 18665 48165', 'square'],
+    ['5167', 'Return address, 80 per sheet', 1.75, 0.5, 4, 20, 0.5, 0.28125, 2.0625, 0.5, '5267 6467 8167 8667 15267 18167 18667 48267 48467 48867'],
+    ['5195', 'Return address, 60 per sheet', 1.75, 0.667, 4, 15, 0.5, 0.28125, 2.0625, 0.667, '6427 8195 15695 18195 18294 18695 38667 42895 48335 88695'],
+    ['5366', 'File folder, 30 per sheet', 3.4375, 0.667, 2, 15, 0.5, 0.53125, 4, 0.667, '5266 5866 6505 8066 8366 45366 48266 48366 75366'],
+    ['5395', 'Name badge, 8 per sheet', 3.375, 2.333, 2, 4, 0.59375, 0.6875, 3.75, 2.333, '8395 45395'],
+    ['5371', 'Business cards, 10 per sheet', 3.5, 2, 2, 5, 0.5, 0.75, 3.5, 2, '5376 5377 5911 8371 8869 28371 38371', 'square'],
+    ['8387', 'Postcards, 4 per sheet', 4.25, 5.5, 2, 2, 0, 0, 4.25, 5.5, '5689 3263', 'square'],
+    ['6873', 'Rectangle 3.75 × 2 in, 8 per sheet', 3.75, 2, 2, 4, null, null, 4, 2.5, '8873'],
+    ['22805', 'Square 1.5 in, 24 per sheet', 1.5, 1.5, 4, 6, null, null, 1.9375, 1.6875, ''],
+    ['22806', 'Square 2 in, 12 per sheet', 2, 2, 3, 4, null, null, 2.625, 2.625, ''],
+    ['22816', 'Square 3 in, 6 per sheet', 3, 3, 2, 3, null, null, 3.5, 3.5, ''],
+    ['8293', 'Round 1.5 in, 20 per sheet', 1.5, 1.5, 4, 5, null, null, 2, 2, '', 'round'],
+    ['22807', 'Round 2 in, 12 per sheet', 2, 2, 3, 4, null, null, 2.5, 2.5, '', 'round'],
+    ['5294', 'Round 2.5 in, 12 per sheet', 2.5, 2.5, 3, 4, null, null, 2.625, 2.625, '', 'round'],
+  ]);
+  const AVERY_A4 = sheets('A4', 'mm', [
+    ['L7160', 'Address, 21 per sheet', 63.5, 38.1, 3, 7, 15.15, 7.21, 66.04, 38.1, 'J8160 L7560 L7160-100'],
+    ['L7159', 'Address, 24 per sheet', 63.5, 33.9, 3, 8, 12.9, 7.21, 66.04, 33.9, 'J8159 L7159-100'],
+    ['L7161', 'Address, 18 per sheet', 63.5, 46.6, 3, 6, 8.8, 7.21, 66.04, 46.6, 'J8161'],
+    ['L7162', 'Address, 16 per sheet', 99.1, 33.9, 2, 8, 12.9, 4.65, 101.6, 33.9, 'J8162'],
+    ['L7163', 'Address, 14 per sheet', 99.1, 38.1, 2, 7, 15.15, 4.65, 101.6, 38.1, 'J8163 L7563'],
+    ['L7177', 'Address, 12 per sheet', 99.1, 42.3, 2, 6, 21.6, 4.65, 101.6, 42.3, 'J8177'],
+    ['L7164', '12 per sheet', 63.5, 72, 3, 4, 4.5, 7.21, 66.04, 72, ''],
+    ['L7173', 'Shipping, 10 per sheet', 99.1, 57, 2, 5, 6, 4.65, 101.6, 57, 'J8173'],
+    ['L7165', 'Parcel, 8 per sheet', 99.1, 67.7, 2, 4, 13.1, 4.65, 101.6, 67.7, 'J8165'],
+    ['L7166', 'Parcel, 6 per sheet', 99.1, 93.1, 2, 3, 8.85, 4.65, 101.6, 93.1, 'J8166'],
+    ['L7169', 'Parcel, 4 per sheet', 99.1, 139, 2, 2, 9.5, 4.65, 101.6, 139, 'J8169'],
+    ['L7168', 'Half sheet, 2 per sheet', 199.6, 143.5, 1, 2, 5, 5.2, 199.6, 143.5, 'J8168'],
+    ['L7167', 'Full sheet', 199.6, 289.1, 1, 1, 3.95, 5.2, 199.6, 289.1, 'J8167'],
+    ['L7171', 'Lever arch file, 4 per sheet', 200, 60, 1, 4, 28.5, 5, 200, 60, ''],
+    ['L7651', 'Mini, 65 per sheet', 38.1, 21.2, 5, 13, 10.7, 4.75, 40.64, 21.2, 'J8651'],
+    ['L7654', 'Mini, 40 per sheet', 45.7, 25.4, 4, 10, 21.5, 9.7, 48.3, 25.4, 'J8654'],
+    ['L4732', 'Mini, 80 per sheet', 35.6, 16.9, 5, 16, 13.1, 11, 38.1, 16.9, ''],
+    ['L7120', 'Square 35 mm, 35 per sheet', 35, 35, 5, 7, null, null, 40, 40, ''],
+    ['L7630', 'Round 63.5 mm, 12 per sheet', 63.5, 63.5, 3, 4, null, null, 69.5, 69.5, '', 'round'],
+    ['L7414', 'Business cards, 10 per sheet', 85, 54, 2, 5, null, null, 95, 54, 'C32010 C32011', 'square'],
+  ]);
+  const FORMS = [
+    ...sheets('Letter', 'in', [
+      ['Letter full', 'Full sheet, Letter', 8.5, 11, 1, 1, 0, 0, 8.5, 11, '', 'square'],
+      ['Letter half', 'Half sheet, 2 per Letter page', 8.5, 5.5, 1, 2, 0, 0, 8.5, 5.5, '', 'square'],
+      ['Letter quarter', 'Quarter sheet, 4 per Letter page', 4.25, 5.5, 2, 2, 0, 0, 4.25, 5.5, '', 'square'],
+      ['Letter 4×6 ×2', 'Two 4 × 6 in shipping labels', 4, 6, 2, 1, null, null, 4.25, 6, '', 'square'],
+      ['Letter sixths', '6 per Letter page', 4.25, 3.667, 2, 3, 0, 0, 4.25, 3.667, '', 'square'],
+    ]),
+    ...sheets('A4', 'mm', [
+      ['A4 full', 'Full sheet, A4', 210, 297, 1, 1, 0, 0, 210, 297, '', 'square'],
+      ['A4 half', 'A5, 2 per A4 page', 210, 148.5, 1, 2, 0, 0, 210, 148.5, '', 'square'],
+      ['A4 quarter', 'A6, 4 per A4 page', 105, 148.5, 2, 2, 0, 0, 105, 148.5, '', 'square'],
+      ['A4 eighths', 'A7, 8 per A4 page', 105, 74.25, 2, 4, 0, 0, 105, 74.25, '', 'square'],
+    ]),
+    ...sheets('Legal', 'in', [
+      ['Legal full', 'Full sheet, Legal', 8.5, 14, 1, 1, 0, 0, 8.5, 14, '', 'square'],
+    ]),
+  ];
   const tape = (brand, w, len) => ({ code: `${brand} ${w} mm`, name: 'Continuous tape', w: len, h: w, shape: 'tape' });
   const STOCK = [
     ['Dymo LabelWriter', [
@@ -1052,26 +1204,9 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
       ['4 × 6 in', 4, 6], ['4 × 4 in', 4, 4], ['4 × 3 in', 4, 3], ['4 × 2 in', 4, 2], ['4 × 1 in', 4, 1],
       ['3 × 2 in', 3, 2], ['3 × 1 in', 3, 1], ['2.25 × 1.25 in', 2.25, 1.25], ['2 × 1 in', 2, 1], ['1.5 × 1 in', 1.5, 1],
     ].map(([n, w, h]) => ({ code: n, name: w >= 4 && h >= 4 ? 'Shipping' : 'Direct thermal', w: IN(w), h: IN(h) }))],
-    ['Avery (US Letter sheets)', [
-      { code: '5160', name: 'Address, 30 per sheet', w: IN(2.625), h: IN(1) },
-      { code: '5161', name: 'Address, 20 per sheet', w: IN(4), h: IN(1) },
-      { code: '5162', name: 'Address, 14 per sheet', w: IN(4), h: IN(1.333) },
-      { code: '5163', name: 'Shipping, 10 per sheet', w: IN(4), h: IN(2) },
-      { code: '5164', name: 'Shipping, 6 per sheet', w: IN(4), h: IN(3.333) },
-      { code: '5167', name: 'Return address, 80 per sheet', w: IN(1.75), h: IN(0.5) },
-      { code: '5195', name: 'Return address, 60 per sheet', w: IN(1.75), h: IN(0.667) },
-      { code: '5366', name: 'File folder', w: IN(3.4375), h: IN(0.667) },
-      { code: '22805', name: 'Square 1.5 in', w: IN(1.5), h: IN(1.5) },
-      { code: '22807', name: 'Round 2 in', w: IN(2), h: IN(2), shape: 'round' },
-      { code: '5294', name: 'Round 2.5 in', w: IN(2.5), h: IN(2.5), shape: 'round' },
-    ]],
-    ['Avery (A4 sheets)', [
-      { code: 'L7160', name: '21 per sheet', w: 63.5, h: 38.1 },
-      { code: 'L7163', name: '14 per sheet', w: 99.1, h: 38.1 },
-      { code: 'L7165', name: '8 per sheet', w: 99.1, h: 67.7 },
-      { code: 'L7173', name: '10 per sheet', w: 99.1, h: 57 },
-      { code: 'L7651', name: '65 per sheet', w: 38.1, h: 21.2 },
-    ]],
+    ['Avery (US Letter sheets)', AVERY_US],
+    ['Avery (A4 sheets)', AVERY_A4],
+    ['Laser and inkjet forms', FORMS],
   ];
   STOCK.forEach(([brand, items]) => items.forEach((s) => { s.brand = brand; s.shape = s.shape || 'rect'; s.id = brand + '|' + s.code + '|' + s.name; }));
   const ALL_STOCK = STOCK.flatMap(([, items]) => items);
@@ -1114,6 +1249,10 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   function applyLabel(next, { shiftObjects = true } = {}) {
     const prev = label;
     label = { ...next };
+    // Print colour: thermal and tape printers are black only; sheets go through colour printers.
+    if (!label.mode) label.mode = prev && next.id === 'custom' && !next.sheet ? prev.mode : label.sheet ? 'color' : 'bw';
+    if (!label.bg) label.bg = '#ffffff';
+    canvas.backgroundColor = label.mode === 'bw' ? '#ffffff' : label.bg;
     if (prev && shiftObjects) {
       const dx = (px(label.w) - px(prev.w)) / 2, dy = (px(label.h) - px(prev.h)) / 2;
       canvas.getObjects().forEach((o) => { o.left += dx; o.top += dy; o.setCoords(); });
@@ -1122,8 +1261,9 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     canvas.clipPath = label.shape === 'round'
       ? new fabric.Ellipse({ rx: w / 2, ry: h / 2, left: 0, top: 0, absolutePositioned: true })
       : null;
-    frame.className = 'label-frame' + (label.shape === 'round' ? ' round' : label.shape === 'tape' ? ' tape' : '');
+    frame.className = 'label-frame' + (label.shape === 'round' ? ' round' : label.shape === 'tape' ? ' tape' : '') + (label.mode === 'bw' ? ' bw' : '');
     frame.style.borderRadius = label.shape === 'rect' ? (px(1.6) * zoom) + 'px' : '';
+    frame.classList.toggle('bw', label.mode === 'bw');
     renderStockList();
     updateTapeUi();
     setZoom(zoom, false);
@@ -1328,7 +1468,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   function turnLabel() {
     const old = labelPx();
     canvas.discardActiveObject();
-    const next = { ...label, w: label.h, h: label.w };
+    const next = { ...label, w: label.h, h: label.w, turn: ((label.turn || 0) + 90) % 360 };
     quiet(() => canvas.getObjects().forEach((o) => {
       const c = o.getCenterPoint();
       o.setPositionByOrigin(new fabric.Point(old.h - c.y, c.x), 'center', 'center');
@@ -1397,11 +1537,24 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
       $('props-title').textContent = 'Label';
       $('p-stock-name').textContent = `${label.brand === 'Custom' ? 'Custom' : label.brand + ' ' + label.code} – ${label.name}`;
       $('p-stock-size').textContent = fmtSize(label.w, label.h) + (label.shape === 'round' ? ', round' : label.shape === 'tape' ? ', continuous' : '');
+      const bw = label.mode === 'bw';
+      $('mode-color').setAttribute('aria-pressed', String(!bw));
+      $('mode-bw').setAttribute('aria-pressed', String(bw));
+      $('mode-hint').textContent = bw
+        ? 'For thermal label printers (Dymo, Brother, Zebra) and black-only lasers. Only black dots print: colours turn black, white or a fine dot pattern, as the preview shows.'
+        : 'For inkjet and colour laser printers. Every colour prints as you see it.';
+      $('l-bg-f').hidden = bw;
+      $('l-bg').value = label.bg || '#ffffff';
+      $('sheet-sec').hidden = !label.sheet;
+      if (label.sheet) {
+        const t = label.sheet;
+        $('sheet-desc').textContent = `${t.cols * t.rows} labels on a ${t.page} page, ${t.cols} across and ${t.rows} down.`;
+      }
       return;
     }
     const multi = o.type === 'activeSelection';
     const k = multi ? 'multi' : kindOf(o);
-    $('props-title').textContent = { multi: `${o.size()} items`, text: 'Text', barcode: o.bc?.type === 'QR' ? 'QR code' : 'Barcode', rect: 'Box', ellipse: 'Ellipse', line: 'Line', image: 'Image' }[k] || 'Item';
+    $('props-title').textContent = { multi: multi ? `${o.size()} items` : '', text: 'Text', barcode: o.bc?.type === 'QR' ? 'QR code' : 'Barcode', rect: 'Box', ellipse: 'Ellipse', line: 'Line', image: 'Image' }[k] || 'Item';
     $('unit-note').textContent = `(${unit})`;
     const r = o.getBoundingRect(true, true);
     $('p-x').value = toUnit(mmOf(r.left));
@@ -1439,8 +1592,8 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     } else if (k === 'rect' || k === 'ellipse' || k === 'line') {
       $('p-shape').hidden = false;
       const val = (c) => (!c || c === 'rgba(0,0,0,0)' || c === 'transparent') ? 'none' : c;
-      $('s-fill').value = val(o.fill); $('s-fill').disabled = k === 'line';
-      $('s-stroke').value = val(o.stroke);
+      setPick('s-fill', val(o.fill)); $('s-fill').disabled = $('s-fill-c').disabled = k === 'line';
+      setPick('s-stroke', val(o.stroke));
       $('s-sw').value = +mmOf(o.strokeWidth || 0).toFixed(2);
       $('s-radius-f').hidden = k !== 'rect';
       if (k === 'rect') $('s-radius').value = +mmOf(o.rx || 0).toFixed(1);
@@ -1509,8 +1662,33 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // Shapes
   const shp = (fn) => { const o = active(); if (!o || !['rect', 'ellipse', 'line'].includes(kindOf(o))) return; fn(o); modified(o); };
   const colorVal = (v) => v === 'none' ? 'rgba(0,0,0,0)' : v;
-  $('s-fill').onchange = () => shp((o) => o.set('fill', colorVal($('s-fill').value)));
-  $('s-stroke').onchange = () => shp((o) => o.set('stroke', $('s-stroke').value === 'none' ? null : $('s-stroke').value));
+  // Fill and outline: None, a few common colours, or any colour from the picker next to the list.
+  const SWATCHES = [['none', 'None'], ['#000000', 'Black'], ['#ffffff', 'White'], ['#808080', 'Grey'], ['#c8322b', 'Red'], ['#e07a1f', 'Orange'],
+    ['#f2c200', 'Yellow'], ['#1e8a4c', 'Green'], ['#1f5fbf', 'Blue'], ['#7b4fd6', 'Purple'], ['custom', 'Other colour…']];
+  ['s-fill', 's-stroke'].forEach((id) => { $(id).innerHTML = SWATCHES.map(([v, n]) => `<option value="${v}">${n}</option>`).join(''); });
+  function setPick(id, v) {
+    const hex = /^#[0-9a-f]{6}$/i.test(v || '') ? v.toLowerCase() : null;
+    $(id).value = v === 'none' ? 'none' : SWATCHES.some(([c]) => c === hex) ? hex : 'custom';
+    $(id + '-c').value = hex || '#000000';
+  }
+  const setFill = (v) => shp((o) => o.set('fill', colorVal(v)));
+  const setStroke = (v) => shp((o) => o.set('stroke', v === 'none' ? null : v));
+  $('s-fill').onchange = () => { const v = $('s-fill').value; if (v === 'custom') $('s-fill-c').click(); else setFill(v); };
+  $('s-stroke').onchange = () => { const v = $('s-stroke').value; if (v === 'custom') $('s-stroke-c').click(); else setStroke(v); };
+  $('s-fill-c').onchange = () => { setFill($('s-fill-c').value); setPick('s-fill', $('s-fill-c').value); };
+  $('s-stroke-c').onchange = () => { setStroke($('s-stroke-c').value); setPick('s-stroke', $('s-stroke-c').value); };
+
+  // Print colour for the whole label, and the label's own colour (coloured label stock).
+  function setMode(m) {
+    if (label.mode === m) return;
+    applyLabel({ ...label, mode: m }, { shiftObjects: false });
+    canvas.requestRenderAll(); pushHistory(); showProps();
+    toast(m === 'bw' ? 'Black & white: prints only black dots, for thermal printers' : 'Full colour: for inkjet and colour laser printers');
+  }
+  $('mode-color').onclick = () => setMode('color');
+  $('mode-bw').onclick = () => setMode('bw');
+  $('l-bg').onchange = () => { applyLabel({ ...label, bg: $('l-bg').value }, { shiftObjects: false }); canvas.requestRenderAll(); pushHistory(); };
+  $('sheet-print').onclick = () => openSheetPrint();
   $('s-sw').onchange = () => shp((o) => o.set('strokeWidth', px(Math.max(0, num('s-sw') || 0))));
   $('s-radius').onchange = () => shp((o) => { const r = px(Math.max(0, num('s-radius') || 0)) / (o.scaleX || 1); o.set({ rx: r, ry: r }); });
 
@@ -1557,14 +1735,16 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     let html = '', count = 0;
     STOCK.forEach(([brand, items]) => {
       if (b && b !== brand) return;
-      const list = items.filter((s) => !q || `${brand} ${s.code} ${s.name} ${s.w}x${s.h} ${s.w}×${s.h}`.toLowerCase().includes(q));
+      const list = items.filter((s) => !q || `${brand} ${s.code} ${s.name} ${s.also || ''} ${+s.w.toFixed(1)}x${+s.h.toFixed(1)} ${+s.w.toFixed(1)}×${+s.h.toFixed(1)}`.toLowerCase().includes(q));
       if (!list.length) return;
       count += list.length;
       html += `<div class="stock-group">${brand}</div>`;
       list.forEach((s) => {
         const on = label && label.id === s.id;
         const size = s.shape === 'tape' ? (unit === 'in' ? `${(s.h / 25.4).toFixed(2)} in tape` : `${s.h} mm tape`) : fmtSize(s.w, s.h);
-        html += `<button class="stock" data-id="${s.id}" aria-pressed="${on}"><span class="stock-thumb">${thumb(s)}</span><span class="stock-name"><b>${s.code}</b><small>${s.name}</small></span><span class="stock-size">${size}</span></button>`;
+        const hit = q && s.also && !s.code.toLowerCase().includes(q) ? s.also.split(' ').find((c) => c.toLowerCase().includes(q)) : '';
+        const also = s.also ? ` title="Same layout: ${s.also.split(' ').join(', ')}"` : '';
+        html += `<button class="stock" data-id="${s.id}" aria-pressed="${on}"${also}><span class="stock-thumb">${thumb(s)}</span><span class="stock-name"><b>${s.code}</b><small>${s.name}${hit ? ` · same as ${hit}` : ''}</small></span><span class="stock-size">${size}</span></button>`;
       });
     });
     $('stock-list').innerHTML = html || '<p class="hint" style="padding:12px 6px">No labels match. Try a size like “89” or a code like “30252”, or set a custom size below.</p>';
@@ -1583,12 +1763,22 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     $('tape-len-label').textContent = `Length (${unit})`;
     $('tape-len').value = toUnit(label.w);
     $('cw-label').textContent = `Width (${unit})`; $('ch-label').textContent = `Height (${unit})`;
+    $('cs-gx-l').textContent = `Gap across (${unit})`; $('cs-gy-l').textContent = `Gap down (${unit})`;
   }
+  $('custom-shape').onchange = () => { $('custom-sheet').hidden = !$('custom-shape').value.startsWith('sheet'); };
   $('tape-len').onchange = () => { applyLabel({ ...label, w: Math.max(10, fromUnit(num('tape-len'))) }); fitZoom(); pushHistory(); };
   $('custom-apply').onclick = () => {
     const w = Math.max(5, fromUnit(num('custom-w'))), h = Math.max(5, fromUnit(num('custom-h')));
     const shape = $('custom-shape').value;
-    applyLabel({ id: 'custom', brand: 'Custom', code: 'Custom', name: shape === 'tape' ? 'Continuous tape' : 'Custom size', w, h, shape: shape === 'square' ? 'square' : shape });
+    if (shape.startsWith('sheet')) {
+      const page = $('cs-page').value, [pw, ph] = PAGES[page];
+      const cols = Math.max(1, Math.round(num('cs-cols')) || 1), rows = Math.max(1, Math.round(num('cs-rows')) || 1);
+      const hp = w + Math.max(0, fromUnit(num('cs-gx')) || 0), vp = h + Math.max(0, fromUnit(num('cs-gy')) || 0);
+      const left = (pw - (hp * (cols - 1) + w)) / 2, top = (ph - (vp * (rows - 1) + h)) / 2;
+      if (left < 0 || top < 0) { toast(`${cols} × ${rows} labels of that size do not fit on ${page}. Use fewer or smaller labels.`); return; }
+      applyLabel({ id: 'custom', brand: 'Custom', code: 'Custom', name: `Custom sheet, ${cols * rows} per ${page} page`, w, h,
+        shape: shape === 'sheet-round' ? 'round' : 'rect', sheet: { page, pw, ph, cols, rows, lw: w, lh: h, hp, vp, left, top } });
+    } else applyLabel({ id: 'custom', brand: 'Custom', code: 'Custom', name: shape === 'tape' ? 'Continuous tape' : 'Custom size', w, h, shape: shape === 'square' ? 'square' : shape });
     fitZoom(); pushHistory(); showProps();
   };
 
@@ -1596,6 +1786,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     $('st-stock').textContent = label.brand === 'Custom' ? 'Custom size' : `${label.brand} ${label.code}`;
     $('st-size').textContent = fmtSize(label.w, label.h);
     $('st-px').textContent = `${Math.round(px(label.w))} × ${Math.round(px(label.h))} dots at 300 DPI`;
+    $('st-mode').textContent = (label.mode === 'bw' ? 'Black & white' : 'Full colour') + (label.sheet ? ` · ${label.sheet.cols * label.sheet.rows} per ${label.sheet.page} sheet` : '');
   }
 
   // =====================================================================
@@ -1729,13 +1920,46 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   }
 
   // ---- Export ----
-  function renderImage(fmt, dpi, transparent) {
+  // The label as a picture at the given resolution. In black & white, it becomes pure black and white dots.
+  function renderCanvas(dpi, transparent, dither = true) {
     canvas.discardActiveObject();
     const bg = canvas.backgroundColor;
-    if (transparent && fmt === 'png') canvas.backgroundColor = null;
-    const url = canvas.toDataURL({ format: fmt === 'jpg' ? 'jpeg' : 'png', quality: 0.95, multiplier: (dpi / DPI) / zoom, enableRetinaScaling: false });
+    if (transparent) canvas.backgroundColor = null;
+    const el = canvas.toCanvasElement((dpi / DPI) / zoom);
     canvas.backgroundColor = bg; canvas.requestRenderAll(); showProps();
-    return url;
+    if (label.mode === 'bw' && dither) toBlackWhite(el, transparent);
+    return el;
+  }
+  function renderImage(fmt, dpi, transparent) {
+    const el = renderCanvas(dpi, transparent && fmt === 'png');
+    if (fmt !== 'jpg') return el.toDataURL('image/png');
+    const out = document.createElement('canvas'); out.width = el.width; out.height = el.height;
+    const ctx = out.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, out.width, out.height); ctx.drawImage(el, 0, 0);
+    return out.toDataURL('image/jpeg', 0.95);
+  }
+  // Thermal printers make only black dots, so greys and colours become a dot pattern. Atkinson dithering
+  // keeps solid black and white solid, so text and barcodes stay crisp.
+  function toBlackWhite(el, transparent) {
+    const ctx = el.getContext('2d'), W = el.width, H = el.height, img = ctx.getImageData(0, 0, W, H), d = img.data;
+    const g = new Float32Array(W * H);
+    for (let i = 0, q = 0; i < g.length; i++, q += 4) {
+      const a = d[q + 3] / 255;
+      g[i] = 255 - a * (255 - (0.299 * d[q] + 0.587 * d[q + 1] + 0.114 * d[q + 2]));
+    }
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x, v = g[i] < 128 ? 0 : 255, e = (g[i] - v) / 8, q = i * 4;
+        if (e) {
+          if (x + 1 < W) g[i + 1] += e;
+          if (x + 2 < W) g[i + 2] += e;
+          if (y + 1 < H) { if (x > 0) g[i + W - 1] += e; g[i + W] += e; if (x + 1 < W) g[i + W + 1] += e; }
+          if (y + 2 < H) g[i + 2 * W] += e;
+        }
+        const clear = transparent && d[q + 3] < 128 && v === 255;
+        d[q] = d[q + 1] = d[q + 2] = v; d[q + 3] = clear ? 0 : 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
   }
   function renderSvg() {
     canvas.discardActiveObject();
@@ -1745,12 +1969,16 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     const { w, h } = labelPx();
     let svg = canvas.toSVG({ width: `${label.w}mm`, height: `${label.h}mm`, viewBox: { x: 0, y: 0, width: w, height: h } });
     canvas.viewportTransform = vpt; canvas.backgroundColor = bg; canvas.requestRenderAll(); showProps();
-    // White label background covering the whole label, drawn first.
+    // The label background (white, or the label colour in full colour) covering the whole label, drawn first.
+    const bgc = label.mode === 'bw' ? '#ffffff' : (label.bg || '#ffffff');
     const shape = label.shape === 'round'
-      ? `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2}" ry="${h / 2}" fill="#ffffff"/>`
-      : `<rect x="0" y="0" width="${w}" height="${h}" fill="#ffffff"/>`;
+      ? `<ellipse cx="${w / 2}" cy="${h / 2}" rx="${w / 2}" ry="${h / 2}" fill="${bgc}"/>`
+      : `<rect x="0" y="0" width="${w}" height="${h}" fill="${bgc}"/>`;
+    // Black & white: everything is shown in greys (the printer driver turns greys into dots).
+    const bwOpen = label.mode === 'bw' ? '<defs><filter id="lc-bw"><feColorMatrix type="saturate" values="0"/></filter></defs><g filter="url(#lc-bw)">' : '';
     svg = svg.replace(/(<svg[^>]*>)/, `$1
-${shape}`);
+${shape}${bwOpen}`);
+    if (bwOpen) svg = svg.replace(/<\/svg>\s*$/, '</g></svg>');
     return svg;
   }
   function openExport() {
@@ -1765,6 +1993,7 @@ ${shape}`);
     $('ex-size').textContent = f === 'svg'
       ? `Vector file sized ${fmtSize(label.w, label.h)}`
       : `${Math.round(label.w / 25.4 * dpi)} × ${Math.round(label.h / 25.4 * dpi)} pixels · prints at ${fmtSize(label.w, label.h)}`;
+    $('ex-size').textContent += label.mode === 'bw' ? ' · black & white dots only' : ' · full colour';
   }
   ['ex-format', 'ex-dpi'].forEach((id) => { $(id).onchange = updateExportUi; });
   $('ex-cancel').onclick = () => { $('export').hidden = true; };
@@ -1786,12 +2015,123 @@ ${shape}`);
 
   // ---- Print (sends the label at its real size to the system print dialog) ----
   function printLabel() {
+    if (label.sheet) return openSheetPrint();
     if (inFrame) { info('Print', '<p>Printing is not available in this viewer. Run LabelCraft from <code>index.html</code> on your computer, or export a PNG and print that.</p>'); return; }
     const url = renderImage('png', 300, false);
     const area = $('print-area');
     area.innerHTML = `<style>@page { size: ${label.w}mm ${label.h}mm; margin: 0; }</style><img alt="" src="${url}" style="width:${label.w}mm;height:${label.h}mm">`;
     area.querySelector('img').onload = () => { window.print(); };
   }
+
+  // ---- Sheets for laser and inkjet printers: full sheets, or some labels starting at a position ----
+  const ADJ_KEY = 'labelcraft-sheet-adjust';
+  let shStart = 1;
+  // The label turned back to the way it sits on the sheet (after "Turn label 90°").
+  function cellImage(dpi, dither) {
+    const src = renderCanvas(dpi, true, dither), t = label.sheet, turn = (label.turn || 0) % 360;
+    if (!turn) return src;
+    const out = document.createElement('canvas');
+    out.width = Math.round(t.lw / 25.4 * dpi); out.height = Math.round(t.lh / 25.4 * dpi);
+    const ctx = out.getContext('2d');
+    ctx.translate(out.width / 2, out.height / 2); ctx.rotate(-turn * Math.PI / 180);
+    ctx.drawImage(src, -src.width / 2, -src.height / 2);
+    return out;
+  }
+  // Which positions get a label, page by page.
+  function sheetPlan() {
+    const t = label.sheet, n = t.cols * t.rows;
+    if (document.querySelector('input[name="sh-what"]:checked').value === 'full') {
+      const pages = Math.min(20, Math.max(1, Math.round(num('sh-sheets')) || 1));
+      return Array.from({ length: pages }, () => Array.from({ length: n }, (_, i) => i));
+    }
+    let left = Math.min(20 * n, Math.max(1, Math.round(num('sh-count')) || 1)), pos = Math.min(n, Math.max(1, shStart)) - 1;
+    const pages = [];
+    while (left > 0) { const pg = []; for (; pos < n && left > 0; pos++, left--) pg.push(pos); pages.push(pg); pos = 0; }
+    return pages;
+  }
+  function slotBox(i) {
+    const t = label.sheet, c = i % t.cols, r = Math.floor(i / t.cols);
+    return { x: t.left + c * t.hp, y: t.top + r * t.vp, w: t.lw, h: t.lh };
+  }
+  function drawSheetPreview() {
+    const t = label.sheet, n = t.cols * t.rows, some = document.querySelector('input[name="sh-what"]:checked').value === 'some';
+    $('sh-full-f').hidden = some; $('sh-some-f').hidden = $('sh-some-hint').hidden = !some;
+    $('sh-start').max = n; $('sh-start').value = shStart;
+    const plan = sheetPlan(), first = new Set(plan[0]);
+    const prev = $('sh-prev');
+    prev.style.aspectRatio = `${t.pw} / ${t.ph}`;
+    const thumb = cellImage(Math.max(24, Math.min(72, 2400 / Math.max(t.pw, t.ph))), false).toDataURL('image/png');
+    let html = '';
+    for (let i = 0; i < n; i++) {
+      const b = slotBox(i), state = first.has(i) ? 'print' : some && i < shStart - 1 ? 'used' : 'empty';
+      html += `<button type="button" data-i="${i}" class="${state}${label.shape === 'round' ? ' round' : ''}" title="Label ${i + 1}${state === 'used' ? ' (skipped)' : ''}" style="left:${b.x / t.pw * 100}%;top:${b.y / t.ph * 100}%;width:${b.w / t.pw * 100}%;height:${b.h / t.ph * 100}%"></button>`;
+    }
+    prev.innerHTML = html;
+    prev.querySelectorAll('button.print').forEach((b) => { b.style.backgroundImage = `url(${thumb})`; });
+    prev.style.filter = label.mode === 'bw' ? 'grayscale(1) contrast(1.2)' : '';
+    const count = plan.reduce((a, p) => a + p.length, 0);
+    $('sh-pages').textContent = `${count} label${count === 1 ? '' : 's'} on ${plan.length} page${plan.length === 1 ? '' : 's'}${plan.length > 1 ? ' (page 1 shown)' : ''}`;
+  }
+  function openSheetPrint() {
+    const t = label.sheet;
+    $('sh-desc').textContent = `${label.brand === 'Custom' ? 'Custom sheet' : label.brand + ' ' + label.code} · ${t.cols * t.rows} labels on ${t.page} paper (${fmtSize(t.pw, t.ph)}) · ${label.mode === 'bw' ? 'black & white' : 'full colour'}`;
+    $('sh-tip').textContent = (t.approx ? 'This layout is worked out from the label size, so print one test page with outlines on plain paper first. ' : '')
+      + 'In the print window choose the paper size ' + t.page + ', margins None and scale 100% (Actual size). If the labels land a little off, enter how far to move them and print again; LabelCraft remembers it.';
+    try { const a = JSON.parse(localStorage.getItem(ADJ_KEY) || '{}'); $('sh-dx').value = a.dx || 0; $('sh-dy').value = a.dy || 0; } catch (e) {}
+    shStart = Math.min(shStart, t.cols * t.rows);
+    $('sh-count').value = Math.max(1, Math.min(+$('sh-count').value || 1, t.cols * t.rows));
+    drawSheetPreview();
+    $('sheet').hidden = false; $('sh-go').focus();
+  }
+  function sheetPages() {
+    const t = label.sheet, dpi = 300, k = dpi / 25.4, dx = num('sh-dx') || 0, dy = num('sh-dy') || 0, outline = $('sh-outline').checked;
+    try { localStorage.setItem(ADJ_KEY, JSON.stringify({ dx, dy })); } catch (e) {}
+    const cell = cellImage(dpi, true);
+    return sheetPlan().map((slots) => {
+      const pg = document.createElement('canvas');
+      pg.width = Math.round(t.pw * k); pg.height = Math.round(t.ph * k);
+      const ctx = pg.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, pg.width, pg.height);
+      ctx.imageSmoothingEnabled = false; // keeps black & white dots pure black and white
+      slots.forEach((i) => {
+        const b = slotBox(i), x = Math.round((b.x + dx) * k), y = Math.round((b.y + dy) * k), w = cell.width, h = cell.height;
+        ctx.drawImage(cell, x, y);
+        if (outline) {
+          ctx.save(); ctx.strokeStyle = '#9aa1ad'; ctx.lineWidth = 0.2 * k; ctx.beginPath();
+          if (label.shape === 'round') ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+          else ctx.rect(x, y, w, h);
+          ctx.stroke(); ctx.restore();
+        }
+      });
+      return pg.toDataURL('image/png');
+    });
+  }
+  document.querySelectorAll('input[name="sh-what"]').forEach((r) => { r.onchange = drawSheetPreview; });
+  ['sh-sheets', 'sh-count'].forEach((id) => { $(id).oninput = drawSheetPreview; });
+  $('sh-start').oninput = () => { shStart = Math.max(1, Math.round(num('sh-start')) || 1); drawSheetPreview(); };
+  $('sh-prev').onclick = (e) => {
+    const b = e.target.closest('button[data-i]'); if (!b) return;
+    document.querySelector('input[name="sh-what"][value="some"]').checked = true;
+    shStart = +b.dataset.i + 1; drawSheetPreview();
+  };
+  $('sh-cancel').onclick = () => { $('sheet').hidden = true; };
+  $('sheet').onkeydown = (e) => { if (e.key === 'Escape') $('sheet').hidden = true; };
+  $('sh-go').onclick = () => {
+    if (inFrame) { info('Print', '<p>Printing is not available in this viewer. Run LabelCraft from <code>index.html</code> on your computer, or use Save as PNG.</p>'); return; }
+    const t = label.sheet, pages = sheetPages();
+    $('sheet').hidden = true;
+    const area = $('print-area');
+    area.innerHTML = `<style>@page { size: ${t.pw}mm ${t.ph}mm; margin: 0; }</style>` + pages.map((u) => `<img alt="" src="${u}" style="width:${t.pw}mm;height:${t.ph}mm">`).join('');
+    const imgs = [...area.querySelectorAll('img')];
+    Promise.all(imgs.map((im) => im.complete ? 0 : new Promise((r) => { im.onload = r; }))).then(() => window.print());
+  };
+  $('sh-png').onclick = async () => {
+    const pages = sheetPages();
+    $('sheet').hidden = true;
+    if (inFrame) return info('Sheet as PNG', '<p>Downloads are blocked in this viewer. Right-click a page and choose “Save image as…”.</p>' + pages.map((u) => `<img class="export-preview" alt="Sheet" src="${u}">`).join(''));
+    for (let i = 0; i < pages.length; i++) download(await (await fetch(pages[i])).blob(), `${baseName()}-sheet${pages.length > 1 ? '-' + (i + 1) : ''}.png`);
+    toast(`Saved ${pages.length} sheet${pages.length === 1 ? '' : 's'} at 300 DPI`);
+  };
 
   // =====================================================================
   // Help
@@ -1813,8 +2153,10 @@ ${shape}`);
       <li>Drag to move, pull the corner handles to resize, and use the round handle or the rotate buttons to turn things 90° or 180°.</li>
       <li>Change the details on the right: font and size for text, type and data for barcodes, exact position and size in ${unit}.</li>
       <li>The dashed red line marks the safe printing area. Keep important content inside it.</li></ol>
+    <h3>Colour or black &amp; white</h3><p>Thermal label printers (Dymo, Brother, Zebra) print only black, so their labels start in <b>Black &amp; white</b> and the preview shows it. Sheet labels start in <b>Full colour</b> for inkjet and colour laser printers. Switch any time under <b>Print colour</b> on the right or on the Home tab.</p>
+    <h3>Sheets for laser and inkjet printers</h3><p>Pick an Avery code (searching for any compatible code works, for example 8160 finds 5160) or a form from <b>Laser and inkjet forms</b>. <b>Print</b> then fills a whole sheet, or prints a few labels starting at any position so you can use up a partly used sheet. Use <b>Custom size › Sheet of labels</b> for any other sheet.</p>
     <h3>3. Print or export</h3><p><b>File › Print</b> sends the label at its real size to your label printer. In the print window, choose your printer and its label size, and set scale to 100% (Actual size). <b>Export</b> saves PNG, JPG or SVG at your printer's resolution.</p>`;
-  const aboutHtml = `<p><b>LabelCraft</b> · version 0.1</p><p>A label designer for Dymo, Brother, Zebra and sheet labels, running in your browser.</p>
+  const aboutHtml = `<p><b>LabelCraft</b> · version 0.2</p><p>A label designer for Dymo, Brother, Zebra and Avery sheet labels, in full colour or black &amp; white, running in your browser.</p>
     <p>Built with <a href="https://fabricjs.com" target="_blank" rel="noopener">Fabric.js</a> 5.3 (MIT), <a href="https://github.com/lindell/JsBarcode" target="_blank" rel="noopener">JsBarcode</a> 3.11 (MIT) and <a href="https://github.com/kazuhikoarase/qrcode-generator" target="_blank" rel="noopener">qrcode-generator</a> 1.4 (MIT).</p>
     <p style="color:var(--muted)">Label names and codes are used only to identify compatible sizes. Check measurements against your own stock before printing large runs.</p>`;
 
@@ -1853,6 +2195,11 @@ ${shape}`);
       '-',
       { label: 'Export image…', key: 'Ctrl+E', run: openExport },
       { label: 'Print…', key: 'Ctrl+P', run: printLabel },
+      { label: 'Print a sheet…', run: () => openSheetPrint(), disabled: () => !label.sheet },
+      '-',
+      { heading: 'Print colour' },
+      { label: 'Full colour', run: () => setMode('color'), checked: () => label.mode !== 'bw' },
+      { label: 'Black & white', run: () => setMode('bw'), checked: () => label.mode === 'bw' },
       '-',
       { label: 'Clear label', run: clearLabel },
     ]],
@@ -2039,6 +2386,8 @@ ${shape}`);
   if (window.CraftTitlebar && window.CraftRibbon) {
     const LOGO = `<svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lbc-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c0392b"/><stop offset=".55" stop-color="#d4542c"/><stop offset="1" stop-color="#e0782c"/></linearGradient></defs><rect x="1" y="1" width="38" height="38" rx="11" fill="url(#lbc-g)"/><path d="M8 12h18.5l6 8-6 8H8Z" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="20" r="1.6" fill="#fff"/><path d="M11.5 16v8M14 16v8M16 16v8M18.5 16v8M21 16v8" stroke="#fff" stroke-width="1.4"/><path d="M30.5 6.5l1 2.3 2.3 1-2.3 1-1 2.3-1-2.3-2.3-1 2.3-1Z" fill="#ffe066"/></svg>`;
     const I = window.CraftIcons;
+    const COLOR_ICON = '<circle cx="9" cy="9" r="5" fill="#e0483e" stroke="none"/><circle cx="15" cy="9" r="5" fill="#2f8be0" stroke="none" opacity=".85"/><circle cx="12" cy="14.5" r="5" fill="#f2c200" stroke="none" opacity=".85"/>';
+    const BW_ICON = '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor"/>';
     const st = document.createElement('style');
     st.textContent = '.app.has-ctb { grid-template-rows: auto auto minmax(0, 1fr) auto; } .app.has-ctb > .bar { display: none; } .crb .drawer-toggle { display: none; } @media (max-width: 980px) { .crb .drawer-toggle { display: inline-flex; } } .crb .zoom-val { min-width: 46px; text-align: center; font-size: 12px; }';
     document.head.append(st);
@@ -2055,6 +2404,7 @@ ${shape}`);
           ['Clipboard', [C('Paste', 'Paste', I.paste, { big: true }), { col: [C('Cut', 'Cut', I.cut), C('Copy', 'Copy', I.copy), C('Duplicate', 'Duplicate', I.duplicate)] }]],
           ['Selection', [{ col: [C('Select all', 'Select all', I.selectAll), C('Delete', 'Delete', I.trash)] }]],
           ['Label', [C('New label', 'New label', I.newPage, { big: true }), { col: [C('Turn label 90', 'Turn label 90°', I.turn), C('Clear label', 'Clear label', I.clear)] }]],
+          ['Print colour', [C('Full colour', 'Full colour', COLOR_ICON, { big: true, title: 'For inkjet and colour laser printers' }), C('Black & white', 'Black & white', BW_ICON, { big: true, title: 'For thermal label printers: black dots only' })]],
         ] },
         { id: 'insert', label: 'Insert', hue: '#1e9e6a', groups: [
           ['Text and codes', [B('Text', I.text, click('add-text'), { big: true }), B('Barcode', I.barcode, click('add-barcode'), { big: true }), B('QR code', I.qr, click('add-qr'), { big: true })]],
@@ -2073,7 +2423,8 @@ ${shape}`);
           ['Theme', [{ col: [C('Light', 'Light', I.sun), C('Dark', 'Dark', I.moon), C('Match system', 'Like Windows', I.desktop)] }]],
         ] },
         { id: 'output', label: 'Output', hue: '#7b4fd6', groups: [
-          ['Export', [C('Export image', 'Export image', I.picture, { big: true, title: 'PNG, JPG or SVG at 203, 300 or 600 DPI' }), C('Print', 'Print', I.print, { big: true })]],
+          ['Export', [C('Export image', 'Export image', I.picture, { big: true, title: 'PNG, JPG or SVG at 203, 300 or 600 DPI' }), C('Print…', 'Print', I.print, { big: true }), C('Print a sheet', 'Print sheet', I.table, { big: true, title: 'Full sheets, or some labels starting at a position (laser and inkjet sheets)', disabled: () => !label.sheet })]],
+          ['Print colour', [{ col: [C('Full colour', 'Full colour', COLOR_ICON), C('Black & white', 'Black & white', BW_ICON)] }]],
           ['File', [C('Save', 'Save', I.save, { big: true }), { col: [C('Save as', 'Save as…', I.save), C('Open', 'Open…', I.folder)] }]],
         ] },
       ],
@@ -2093,6 +2444,7 @@ ${shape}`);
       getInfo: () => label ? [
         { text: label.brand === 'Custom' ? 'Custom size' : `${label.brand} ${label.code}`, title: label.name || 'Label stock' },
         { text: `${Math.round(label.w * 10) / 10} × ${Math.round(label.h * 10) / 10} mm`, title: 'Label size' },
+        { text: label.mode === 'bw' ? 'Black & white' : 'Full colour', title: 'Print colour (click to switch)', run: () => setMode(label.mode === 'bw' ? 'color' : 'bw') },
       ] : [],
       rightEls: [$('theme-btn')],
       onHelp: () => info('Getting started', startHtml),
