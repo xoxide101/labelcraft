@@ -121,6 +121,13 @@ This writes:
 
 Chrome or Edge (recent versions). Firefox and Safari work too, but download files instead of saving straight into a folder.
 
+## Objects and text (the same in every Craft app)
+
+- **Shapes:** box, rounded box, circle, triangle, diamond, pentagon, hexagon, octagon, star, arrow and line, with **corners from sharp to round**, dashed borders and **words inside**.
+- **Text box:** words that wrap inside a box with a border, background, corners, padding and top or middle alignment.
+- **Curved text** around the centre of the label, with a **rotation angle**, distance from the centre and spread.
+- **Opacity**, **drop shadow** and a **rotation angle** for every item.
+
 ## How this was made
 
 This app is **vibe coded**: its author designed and directed it in plain conversation, feature by feature, and an AI coding assistant (Claude, by Anthropic) wrote the code.

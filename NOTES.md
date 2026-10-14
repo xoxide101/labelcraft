@@ -78,3 +78,5 @@ The Office-style strip at the very top is the shared `CraftTitlebar` component, 
 - Batch and serial printing: numbered labels, or one label per row of a CSV file.
 - Different labels on one sheet (mail merge from CSV, serial numbers per position).
 - Check the centred (approximate) sheet layouts against Avery's published templates.
+
+**2026-10-14:** Rotation angle box for curved text; shapes, text boxes, drop shadow and opacity.
