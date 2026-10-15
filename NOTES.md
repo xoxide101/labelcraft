@@ -101,3 +101,6 @@ Dates: `DATE_FORMATS`, `dateText`, `stampText`, `dateDialog` and `insertDate`. A
 
 The shared fill library (own copy, in the main script): `PATTERNS`, `patternTile`, `gradientCanvas`, `ditherCanvas`, `paintCanvas`, `paintSwitch`, and `paintPicker(paint, apply, opts)`, a fill picker built from plain elements. `paintFabric(paint, w, h)` turns a paint into a Fabric fill (colour, vector gradient, or a pattern up to 4× sharper). The label keeps `label.paint` (drawn by `applyLabelPaint()` as the canvas background image); shapes keep `shape.paint`; tables keep `tb.bgPaint` and `tb.cellFill` (`"row,col": colour`). `canvasJSON()` leaves pixel fills out of saved files and history; `rehydratePaints()` rebuilds those shapes and tables after loading.
 
+## Smooth gradients
+
+`ditherCanvas(canvas)` adds ordered noise of about one colour step only where neighbouring pixels differ by 1–3 levels (smooth gradients), so flat colours and sharp edges are untouched. It runs on every raster render at 100 DPI and up unless the document's `smooth` is false (the retro and black-and-white looks use their own dither instead), and on gradient colour fills in `recolorCanvas`.

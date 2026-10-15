@@ -633,6 +633,7 @@ input[type="color"].input { padding: 2px; height: 30px; }
         <select class="input" id="ex-dpi"><option value="203">203 DPI – Zebra and most thermal printers</option><option value="300" selected>300 DPI – Dymo LabelWriter, Brother QL</option><option value="600">600 DPI – high quality / laser sheets</option><option value="96">96 DPI – screen and web</option></select>
       </label>
       <label class="check" id="ex-transp-f"><input type="checkbox" id="ex-transp"> Transparent background</label>
+      <label class="check" title="Adds a fine dither where colours change smoothly, so gradients print and save without bands. Flat colours stay exact."><input type="checkbox" id="ex-smooth" checked> Smooth gradients (no colour bands)</label>
       <label class="field"><span>File name</span><input class="input" id="ex-name"></label>
       <span class="out-size" id="ex-size"></span>
     </div>
@@ -1609,6 +1610,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
       x.drawImage(pattern, (c.width - pattern.width * k) / 2, (c.height - pattern.height * k) / 2, pattern.width * k, pattern.height * k); return c;
     } else x.fillStyle = f.c1 || '#222222';
     x.fillRect(0, 0, c.width, c.height);
+    if (f.mode === 'gradient') ditherCanvas(c); // a light dither so the gradient does not show bands
     return c;
   }
   const loadImg = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
@@ -3255,9 +3257,11 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     if (transparent) canvas.backgroundColor = null;
     const el = canvas.toCanvasElement((dpi / DPI) / zoom);
     canvas.backgroundColor = bg; canvas.requestRenderAll(); showProps();
+    if (label.mode !== 'bw' && label.smooth !== false && dpi >= 100) ditherCanvas(el); // Smooth gradients (black and white labels get their own dither below)
     if (label.mode === 'bw' && dither) toBlackWhite(el, transparent);
     return el;
   }
+  $('ex-smooth').onchange = () => { label.smooth = $('ex-smooth').checked; pushHistory(); };
   function renderImage(fmt, dpi, transparent) {
     const el = renderCanvas(dpi, transparent && fmt === 'png');
     if (fmt !== 'jpg') return el.toDataURL('image/png');
@@ -3313,6 +3317,7 @@ ${shape}${bwOpen}`);
   }
   function openExport() {
     $('ex-name').value = baseName();
+    $('ex-smooth').checked = label.smooth !== false;
     updateExportUi();
     $('export').hidden = false; $('ex-format').focus();
   }
