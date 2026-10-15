@@ -92,3 +92,7 @@ an inline script at the end of `labelcraft.src.html` adds a number box beside ev
 ## Date and time
 
 Dates: `DATE_FORMATS`, `dateText`, `stampText`, `dateDialog` and `insertDate`. A text with a `stamp` model `{ fmt, before, after }` (saved through `PROPS`) is a dynamic date; `refreshStamps()` runs on loading, before every render (`renderCanvas`) and every 30 seconds.
+
+## Zoom slider
+
+`zoomBar({ get, set, fit, min, max })` (own copy in this app) builds the status-bar zoom: slider positions 0–1000 map to min–100% on the left half and 100%–max on the right, so the middle is always 100% (it snaps there). + and − step through 10, 25, 33, 50, 67, 75, 90, 100, 110, 125, 150… It is marked `data-rt-skip` so the slider-typing helper leaves it alone (it has its own percent box).
