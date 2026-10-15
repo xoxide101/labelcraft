@@ -96,3 +96,8 @@ Dates: `DATE_FORMATS`, `dateText`, `stampText`, `dateDialog` and `insertDate`. A
 ## Zoom slider
 
 `zoomBar({ get, set, fit, min, max })` (own copy in this app) builds the status-bar zoom: slider positions 0–1000 map to min–100% on the left half and 100%–max on the right, so the middle is always 100% (it snaps there). + and − step through 10, 25, 33, 50, 67, 75, 90, 100, 110, 125, 150… It is marked `data-rt-skip` so the slider-typing helper leaves it alone (it has its own percent box).
+
+## Fills and backgrounds
+
+The shared fill library (own copy, in the main script): `PATTERNS`, `patternTile`, `gradientCanvas`, `ditherCanvas`, `paintCanvas`, `paintSwitch`, and `paintPicker(paint, apply, opts)`, a fill picker built from plain elements. `paintFabric(paint, w, h)` turns a paint into a Fabric fill (colour, vector gradient, or a pattern up to 4× sharper). The label keeps `label.paint` (drawn by `applyLabelPaint()` as the canvas background image); shapes keep `shape.paint`; tables keep `tb.bgPaint` and `tb.cellFill` (`"row,col": colour`). `canvasJSON()` leaves pixel fills out of saved files and history; `rehydratePaints()` rebuilds those shapes and tables after loading.
+
