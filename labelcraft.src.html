@@ -245,8 +245,26 @@ input[type="color"].input { padding: 2px; height: 30px; }
   .statusbar .hide-sm { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* Start: what do you want to make? (tiles that pick the label and put starter text on it) */
+.lc-start { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; padding: 24px; overflow: auto; background: color-mix(in srgb, var(--desk) 92%, transparent); }
+.lc-start[hidden] { display: none; }
+.lc-start-in { width: min(900px, 100%); display: grid; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.lc-start h2 { margin: 0; font-size: 22px; }
+.lc-start .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.lc-start .tiles button { display: grid; gap: 4px; padding: 14px; text-align: left; border: 2px solid var(--line); border-radius: 12px; background: var(--panel-2); color: var(--fg); cursor: pointer; font: inherit; }
+.lc-start .tiles button:hover { border-color: var(--accent); }
+.lc-start .tiles b { font-size: 15px; }
+.lc-start .tiles small { color: var(--muted); line-height: 1.35; }
+.lc-start .foot { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; color: var(--muted); font-size: 13px; }
+.lc-start .foot .grow { flex: 1; }
+.lc-start .foot button { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
 </style>
 
+<div class="lc-start" id="lc-start" hidden role="dialog" aria-label="What do you want to make?"><div class="lc-start-in">
+  <h2>What do you want to make?</h2>
+  <div class="tiles" id="lc-start-tiles"></div>
+  <div class="foot"><label><input type="checkbox" id="lc-start-show"> Show this when LabelCraft opens</label><span class="grow"></span><button type="button" id="lc-start-close">Close</button></div>
+</div></div>
 <div class="app">
   <header class="bar">
     <button class="btn drawer-toggle" id="toggle-left" title="Label stock" aria-label="Show label stock"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h6M7 14h4"/></svg></button>
@@ -987,6 +1005,7 @@ input[type="color"].input { padding: 2px; height: 30px; }
     print: '<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7Z"/>',
     preview: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
     export: '<path d="M12 3v12M7 8l5-5 5 5"/><path d="M4 15v5h16v-5"/>',
+    wand: '<path d="m4 20 11-11"/><path d="m13 7 2-2 4 4-2 2Z" class="fill"/><path d="M19 3v3M17.5 4.5h3M7 4v2M6 5h2M19 15v2M18 16h2"/>',
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5h.01"/>',
     search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
     check: '<path d="m5 12 4 4 10-10"/>',
@@ -4115,6 +4134,53 @@ ${shape}${bwOpen}`);
   if (!restored) { sample(); resetHistory(); }
   renderDoc(); fitZoom(); showProps();
 
+  // =====================================================================
+  // Start (the wizard): what do you want to make? Each tile picks the label and puts starter text on it to change.
+  // =====================================================================
+  const A4 = !/^en-(US|CA)$/i.test(navigator.language || 'en-US'), stock = (code) => ALL_STOCK.find((x) => x.code === code);
+  const START = [
+    { title: 'Address labels', what: A4 ? 'Avery L7160 sheet, 21 a page' : 'Avery 5160 sheet, 30 a page', code: A4 ? 'L7160' : '5160',
+      fill: (w, h) => [['Jane Example', 10, true], ['12 Sample Street', 9], ['Springfield, ST 01234', 9]].map(([t, pt, b], i) => makeText(t, { originX: 'left', left: px(4), top: px(5 + i * 5.2), fontSize: ptToPx(pt), fontWeight: b ? 'bold' : 'normal' })) },
+    { title: 'Shipping label', what: '4 × 6 in, for thermal printers', code: '4 × 6 in',
+      fill: (w, h) => [makeText('FROM', { originX: 'left', left: px(6), top: px(8), fontSize: ptToPx(9), fontWeight: 'bold' }), makeText('Sender name\n1 Sample Road\nTown, ST 01234', { originX: 'left', left: px(6), top: px(14), fontSize: ptToPx(9) }),
+        makeText('SHIP TO', { originX: 'left', left: px(6), top: px(48), fontSize: ptToPx(12), fontWeight: 'bold' }), makeText('Customer Name\n99 Example Avenue\nCity, ST 98765', { originX: 'left', left: px(6), top: px(58), fontSize: ptToPx(16) })] },
+    { title: 'Name badges', what: 'Avery 5395 sheet, 8 a page', code: '5395',
+      fill: (w, h) => [makeText('HELLO', { originX: 'center', left: w / 2, top: px(9), fontSize: ptToPx(22), fontWeight: 'bold', fill: '#c0392b' }), makeText('my name is', { originX: 'center', left: w / 2, top: px(18), fontSize: ptToPx(9) }), makeText('Your Name', { originX: 'center', left: w / 2, top: px(38), fontSize: ptToPx(26), fontWeight: 'bold' })] },
+    { title: 'Price or shelf tag', what: 'Dymo 30334, 57 × 32 mm', code: '30334',
+      fill: (w, h) => [makeText('Product name', { originX: 'left', left: px(3), top: px(6), fontSize: ptToPx(10) }), makeText('$9.99', { originX: 'left', left: px(3), top: px(19), fontSize: ptToPx(26), fontWeight: 'bold' })] },
+    { title: 'Barcode or QR label', what: 'Dymo 30334 with a Code 128 barcode', code: '30334',
+      fill: (w, h) => { const g = buildBarcode({ type: 'CODE128', value: 'ITEM-0001', showText: true, wmm: 46, hmm: 14 }); g.set({ left: w / 2, top: h / 2 + px(3) }); return [makeText('Item name', { originX: 'center', left: w / 2, top: px(6), fontSize: ptToPx(9) }), g]; } },
+    { title: 'CD or DVD label', what: A4 ? 'Avery L7676, full face' : 'Avery 8931, full face', code: A4 ? 'L7676' : '8931',
+      fill: (w, h) => [makeText('My Music', { originX: 'center', left: w / 2, top: px(28), fontSize: ptToPx(22), fontWeight: 'bold' }), makeText('2026', { originX: 'center', left: w / 2, top: h - px(28), fontSize: ptToPx(11) })] },
+    { title: 'Blank label', what: 'Choose any size or brand from the list on the left', blank: true },
+    { title: 'Open a label…', what: 'A label you saved before', open: true },
+    { title: 'Carry on', what: 'Back to the label you were working on', close: true },
+  ];
+  async function startTile(t) {
+    if (t.close) return closeStart();
+    if (t.open) { closeStart(); return openFile(); }
+    if (!(await okToDiscard('start a new label'))) return;
+    canvas.discardActiveObject(); quiet(() => canvas.clear()); canvas.backgroundColor = '#ffffff';
+    if (t.blank) { applyLabel(label, { shiftObjects: false }); setDocName('Untitled'); resetHistory(); setDirty(false); fitZoom(); showProps(); closeStart(); $('left').classList.add('open'); toast('Pick a label size or brand on the left.'); return; }
+    const s = stock(t.code); if (s) applyLabel(s, { shiftObjects: false });
+    const { w, h } = labelPx(); quiet(() => t.fill(w, h).forEach((o) => canvas.add(o)));
+    canvas.requestRenderAll(); setDocName(t.title); resetHistory(); setDirty(false); fitZoom(); showProps(); closeStart();
+    toast(`${t.title}: change the text to your own (double-click it).`);
+  }
+  const START_KEY = 'labelcraft-start-show';
+  function showStart() {
+    $('lc-start-tiles').innerHTML = START.map((t, i) => `<button type="button" data-start="${i}"><b>${t.title}</b><small>${t.what}</small></button>`).join('');
+    let on = true; try { on = localStorage.getItem(START_KEY) !== '0'; } catch (e) { /* blocked */ }
+    $('lc-start-show').checked = on; $('lc-start').hidden = false;
+  }
+  function closeStart() { $('lc-start').hidden = true; }
+  $('lc-start-tiles').onclick = (e) => { const b = e.target.closest('[data-start]'); if (b) startTile(START[+b.dataset.start]); };
+  $('lc-start-close').onclick = closeStart;
+  $('lc-start').onclick = (e) => { if (e.target.id === 'lc-start') closeStart(); };
+  $('lc-start').onkeydown = (e) => { if (e.key === 'Escape') closeStart(); };
+  $('lc-start-show').onchange = (e) => { try { localStorage.setItem(START_KEY, e.target.checked ? '1' : '0'); } catch (err) { /* blocked */ } };
+  try { if (localStorage.getItem(START_KEY) !== '0') showStart(); } catch (e) { showStart(); }
+
   // Title bar at the very top (Office style) and the ribbon under it. The logo opens every menu;
   // the old toolbar row is hidden. Shared CraftTitlebar / CraftRibbon (pasted above as its own script).
   if (window.CraftTitlebar && window.CraftRibbon) {
@@ -4259,6 +4325,7 @@ ${shape}${bwOpen}`);
       mount: app, storageKey: 'labelcraft', extraEls: [$('toggle-left'), $('toggle-right')],
       tabs: [
         { id: 'home', label: 'Home', hue: '#c0392b', groups: [
+          ['Start', [B('Start', I.wand, () => showStart(), { big: true, title: 'What do you want to make? Address labels, shipping, name badges, price tags, barcodes, CDs…' })]],
           ['Clipboard', [C('Paste', 'Paste', I.paste, { big: true }), { col: [C('Cut', 'Cut', I.cut), C('Copy', 'Copy', I.copy), C('Duplicate', 'Duplicate', I.duplicate)] }]],
           ['Selection', [{ col: [C('Select all', 'Select all', I.selectAll), C('Delete', 'Delete', I.trash)] }]],
           ['Label', [C('New label', 'New label', I.newPage, { big: true }), { col: [C('Turn label 90', 'Turn label 90°', I.turn), C('Clear label', 'Clear label', I.clear)] }]],
@@ -4320,6 +4387,7 @@ ${shape}${bwOpen}`);
       appName: 'LabelCraft', storageKey: 'labelcraft', colors: ['#c0392b', '#e0782c'],
       mount: app, toast, logo: LOGO, menus: () => menus, ribbon,
       quick: [
+        { icon: 'wand', title: 'Start (wizard)', run: () => showStart() },
         { icon: 'save', title: 'Save', key: 'Ctrl+S', run: () => save(false) },
         { icon: 'undo', title: 'Undo', key: 'Ctrl+Z', run: undo, disabled: () => hIndex <= 0 },
         { icon: 'redo', title: 'Redo', key: 'Ctrl+Y', run: redo, disabled: () => hIndex >= history.length - 1 },
