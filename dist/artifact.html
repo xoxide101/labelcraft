@@ -4090,6 +4090,10 @@ ${shape}${bwOpen}`);
         ']': () => stepSize(1), '[': () => stepSize(-1) }[k];
       if (f) { e.preventDefault(); f(); return; }
     }
+    if (k === 'escape' && !mod && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) {   // Escape unselects what is clicked on (and leaves text editing first)
+      const a = active(); if (a && a.isEditing) a.exitEditing();
+      canvas.discardActiveObject(); canvas.requestRenderAll(); showProps(); return;
+    }
     if (typing) return;
     if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod && k === 'y') { e.preventDefault(); redo(); return; }
@@ -4107,7 +4111,6 @@ ${shape}${bwOpen}`);
     if (k === '+' || k === '=') { autoFit = false; setZoom(zoom * 1.25); }
     if (k === '-' || k === '_') { autoFit = false; setZoom(zoom / 1.25); }
     if (k === '0') { autoFit = true; fitZoom(); }
-    if (k === 'escape') { canvas.discardActiveObject(); canvas.requestRenderAll(); showProps(); }
   });
   window.addEventListener('beforeunload', (e) => { if (dirty && !inFrame) { e.preventDefault(); e.returnValue = ''; } });
 
