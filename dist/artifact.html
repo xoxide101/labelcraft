@@ -713,6 +713,10 @@ input[type="color"].input { padding: 2px; height: 30px; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/4.10.2/bwip-js-min.js"></script>
 <script src="fonts/fonts-list.js"></script>
+<script src="js/craft-crypto.js"></script>
+<script src="js/craft-account.js"></script>
+<script src="js/craft-rail.js"></script>
+<script src="js/craft-files.js"></script>
 <script>
 /* The Symbols picker (the same in every Craft app, each app has its own copy): dingbats and emoji, searchable by name.
    CraftSymbols.open({ onPick }) shows it as a window; CraftSymbols.mount(element, { onPick }) puts it in a panel.
@@ -2536,7 +2540,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     });
     r.readAsDataURL(f);
   }
-  const addClipart = () => window.CraftClipartPicker && CraftClipartPicker.open({ app: 'LabelCraft', onPick: (p) => addImageFile(p.file) });
+  const addClipart = () => window.CraftClipartPicker && CraftClipartPicker.open({ app: 'LabelCraft', onPick: (p) => addImageFile(p.file), onSource: async (src) => { if (!(await okToDiscard('open another label'))) return; readLabelFile(new File([src.text], src.name || 'label.label.json', { type: 'application/json' }), null); } });
   // a barcode from BarcodeCraft's core (its library, or a new one): on the label at its real size, drawn at 600 DPI
   const addBarcodeLib = () => window.CraftBarcode && CraftBarcode.open({ app: 'LabelCraft', title: 'Barcode from BarcodeCraft', onInsert: async (m) => {
     const url = await CraftBarcode.dataUrl(m, 600);
@@ -3439,7 +3443,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   // =====================================================================
   const AUTOSAVE = 'labelcraft-doc-v1', NAME_KEY = 'labelcraft-name';
   const inFrame = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
-  let docName = 'Untitled', fileHandle = null, dirty = false;
+  let docName = 'Untitled', fileHandle = null, dirty = false, myFile = null;
   try { docName = localStorage.getItem(NAME_KEY) || 'Untitled'; } catch (e) {}
 
   function docData() { return { app: 'LabelCraft', version: 1, label, canvas: canvasJSON(), fonts: window.CraftFonts ? CraftFonts.saved() : {} }; }
@@ -3517,7 +3521,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     canvas.discardActiveObject(); quiet(() => canvas.clear());
     canvas.backgroundColor = '#ffffff';
     applyLabel(label, { shiftObjects: false });
-    fileHandle = null; setDocName('Untitled'); resetHistory(); setDirty(false); showProps();
+    fileHandle = null; myFile = null; setDocName('Untitled'); resetHistory(); setDirty(false); showProps();
     toast('New label on ' + (label.brand === 'Custom' ? 'a custom size' : `${label.brand} ${label.code}`));
   }
   async function clearLabel() {
@@ -3529,10 +3533,10 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
   }
 
   const openInput = $('open-input');
-  async function readLabelFile(file, handle) {
+  async function readLabelFile(file, handle, mine) {
     try {
       const data = JSON.parse(await file.text());
-      loadDoc(data, () => { fileHandle = handle || null; setDocName(file.name); resetHistory(); setDirty(false); fitZoom(); toast('Opened ' + file.name); });
+      loadDoc(data, () => { fileHandle = handle || null; myFile = mine || null; setDocName(file.name); resetHistory(); setDirty(false); fitZoom(); toast('Opened ' + file.name); });
     } catch (e) { toast(e.message.startsWith('This is') ? e.message : 'That file could not be read as a label.'); }
   }
   openInput.onchange = () => { const f = openInput.files[0]; openInput.value = ''; if (f) readLabelFile(f, null); };
@@ -3553,7 +3557,30 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
+  // ---- My files (FileCraft's file manager: your account and this browser), in the folder LabelCraft
+  async function saveToMyFiles(saveAs) {
+    if (!window.CraftFiles) return toast('My files is not in this copy of LabelCraft.');
+    let name = myFile && !saveAs ? myFile : prompt('Save to My files (LabelCraft folder) as:', baseName() + '.label.json'); if (!name) return;
+    if (!/\.json$/i.test(name)) name += '.label.json';
+    try { await CraftFiles.saveFile({ folder: 'LabelCraft', name, blob: new Blob([JSON.stringify(docData(), null, 1)], { type: 'application/json' }) }); myFile = name; fileHandle = null; setDocName(name); setDirty(false); toast(`Saved to My files › LabelCraft › ${name}${window.CraftAccount && CraftAccount.user() ? ' (your account)' : ' (this browser: log in for your account)'}`); }
+    catch (e) { toast('Could not save to My files: ' + e.message); }
+  }
+  async function openFromMyFiles() {
+    if (!window.CraftFiles) return toast('My files is not in this copy of LabelCraft.');
+    if (!(await okToDiscard('open another label'))) return;
+    const f = await CraftFiles.pick({ app: 'LabelCraft', folder: 'LabelCraft', accept: /\.(label\.json|json|label)$/i, title: 'Open a label' }); if (!f) return;
+    readLabelFile(new File([f.blob], f.name, { type: 'application/json' }), null, f.path.startsWith('files/LabelCraft/') && f.path.split('/').length === 3 ? f.name : null);
+  }
+  // Keep in My pictures: the label as SVG, a picture, or its working file (to change it again here)
+  function keepLabel() {
+    if (!window.CraftClipartPicker || !CraftClipartPicker.keepAsk) return toast('My pictures is not in this copy of LabelCraft.');
+    CraftClipartPicker.keepAsk({ name: baseName(), from: 'LabelCraft', pick: 'source',
+      svg: async () => new Blob([renderSvg()], { type: 'image/svg+xml' }), png: async () => (await fetch(renderImage('png', 300, true))).blob(),
+      source: async () => ({ name: baseName() + '.label.json', type: 'application/json', text: JSON.stringify(docData()) }) })
+      .then((p) => { if (p && p.id) toast('Kept in My pictures: any Craft app has it under Clip art › My pictures.'); });
+  }
   async function save(saveAs) {
+    if (myFile && !fileHandle && !saveAs) return saveToMyFiles(false);
     const text = JSON.stringify(docData(), null, 1);
     if (inFrame) { info('Save label', `<p>Saving files is not available in this viewer. Download LabelCraft and run <code>index.html</code> on your computer to save label files.</p>`); return; }
     try {
@@ -3877,6 +3904,11 @@ ${shape}${bwOpen}`);
       '-',
       { label: 'Save', key: 'Ctrl+S', run: () => save(false) },
       { label: 'Save as…', key: 'Ctrl+Shift+S', run: () => save(true) },
+      '-',
+      { label: 'Save to My files', run: () => saveToMyFiles(true) },
+      { label: 'Open from My files…', run: openFromMyFiles },
+      { label: 'My files…', run: () => window.CraftFiles && CraftFiles.open({ app: 'LabelCraft' }) },
+      { label: 'Keep in My pictures…', run: keepLabel },
       '-',
       { label: 'Export image…', key: 'Ctrl+E', run: openExport },
       { label: 'Print…', key: 'Ctrl+P', run: printLabel },
@@ -4389,7 +4421,7 @@ ${shape}${bwOpen}`);
         { id: 'output', label: 'Output', hue: '#7b4fd6', groups: [
           ['Export', [C('Export image', 'Export image', I.picture, { big: true, title: 'PNG, JPG or SVG at 203, 300 or 600 DPI' }), C('Print…', 'Print', I.print, { big: true }), C('Print a sheet', 'Print sheet', I.table, { big: true, title: 'Full sheets, or some labels starting at a position (laser and inkjet sheets)', disabled: () => !label.sheet })]],
           ['Print colour', [{ col: [C('Full colour', 'Full colour', COLOR_ICON), C('Black & white', 'Black & white', BW_ICON)] }]],
-          ['File', [C('Save', 'Save', I.save, { big: true }), { col: [C('Save as', 'Save as…', I.save), C('Open', 'Open…', I.folder)] }]],
+          ['File', [C('Save', 'Save', I.save, { big: true }), { col: [C('Save as', 'Save as…', I.save), C('Open…', 'Open…', I.folder)] }, { col: [C('Save to My files', 'To My files', I.save, { title: 'Save to My files (your account, in the LabelCraft folder)' }), C('Open from My files', 'From My files', I.folder, { title: 'Open a label from My files' }), C('Keep in My pictures', 'Keep as picture', I.picture, { title: 'Keep it in My pictures (SVG, a picture, or the label to change again)' })] }]],
         ] },
       ],
     });
@@ -4411,7 +4443,7 @@ ${shape}${bwOpen}`);
         { text: `${Math.round(label.w * 10) / 10} × ${Math.round(label.h * 10) / 10} mm`, title: 'Label size' },
         { text: label.mode === 'bw' ? 'Black & white' : 'Full colour', title: 'Print colour (click to switch)', run: () => setMode(label.mode === 'bw' ? 'color' : 'bw') },
       ] : [],
-      rightEls: [$('theme-btn')],
+      rightEls: [window.CraftAccount && CraftAccount.button ? CraftAccount.button() : null, $('theme-btn')].filter(Boolean),
       onHelp: () => info('Getting started', startHtml),
     });
     app.classList.add('has-ctb');

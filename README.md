@@ -17,6 +17,17 @@ Pick your label stock, add text, barcodes, QR codes, shapes and logos, rotate th
 
 Your label also autosaves in the browser.
 
+## Your account
+
+LabelCraft works without a login. With a Craft account (AccountCraft, on the same web site), the title bar's 👤 logs
+you in, and:
+
+- **Save to My files** keeps the label in your account (My files › LabelCraft), so it opens on any computer;
+  **Open from My files…** opens one from there (or from any folder, or My computer). Ctrl+S saves back where it came from.
+- **Keep in My pictures…** keeps the label for every Craft app: as SVG, as a picture, or as the label itself to change
+  again (Clip art › My pictures › Open it here).
+- **My files…** opens FileCraft's file manager for everything you keep.
+
 ## Finding your way
 
 | Where | What is there |
