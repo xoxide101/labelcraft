@@ -3653,7 +3653,7 @@ button.ctb-chip:hover { background: rgba(255,255,255,.3); }
     if (!window.CraftFiles) return toast('My files is not in this copy of LabelCraft.');
     if (!(await okToDiscard('open another label'))) return;
     const f = await CraftFiles.pick({ app: 'LabelCraft', folder: 'LabelCraft', accept: /\.(label\.json|json|label)$/i, title: 'Open a label' }); if (!f) return;
-    readLabelFile(new File([f.blob], f.name, { type: 'application/json' }), null, f.path.startsWith('files/LabelCraft/') && f.path.split('/').length === 3 ? f.name : null);
+    readLabelFile(new File([f.blob], f.name, { type: 'application/json' }), null, f.path === 'files/LabelCraft' || f.path === 'files/LabelCraft/' + f.name ? f.name : null);
   }
   // Keep in My pictures: the label as SVG, a picture, or its working file (to change it again here)
   function keepLabel() {
