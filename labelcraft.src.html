@@ -4572,7 +4572,8 @@ ${shape}${bwOpen}`);
        text message, WhatsApp, Wi-Fi, contact (vCard, MeCard), calendar event, place or address on a map, plain text
      CraftBarcode.addSource(name, () => [{ label, value, type?, group? }])   information this app offers to the window
      CraftBarcode.library() / save(entry) / remove(id)   saved barcodes (this browser; logged in: your account too)
-     CraftBarcode.open({ app, value, type, onInsert(made) })   the Insert › Barcode window */
+     CraftBarcode.open({ app, value, type, content: 'vcard', onInsert(made) })   the Insert › Barcode window (content: what
+       the QR code is for at first, e.g. 'wifi', 'vcard', 'event', 'url') */
 (function () {
   'use strict';
   const TYPES = [
@@ -4840,7 +4841,7 @@ ${shape}${bwOpen}`);
 .cbc .cf2{display:grid;grid-template-columns:1fr 1fr;gap:0 8px;padding:8px 10px 0;margin:0 0 9px;border:1px solid var(--line,#3a3e4c);border-radius:8px;background:color-mix(in srgb,var(--accent,#2f6fdd) 6%,transparent)}.cbc .cf2 label{margin:0 0 7px}.cbc .cf2 .wide{grid-column:1/-1}.cbc .cf2 .ck{display:flex;gap:6px;align-items:center}.cbc .cf2 .ck input{width:auto}@media(max-width:520px){.cbc .cf2{grid-template-columns:minmax(0,1fr)}}.cbc .hint{margin:-5px 0 9px}
 .cbc footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--line,#3a3e4c);flex-wrap:wrap}`; document.head.append(s);
   }
-  function open({ app = 'Craft', value, type, entry, onInsert, title = 'Insert a barcode', insertLabel = 'Insert' } = {}) {
+  function open({ app = 'Craft', value, type, entry, content, onInsert, title = 'Insert a barcode', insertLabel = 'Insert' } = {}) {
     css(); pull();
     document.querySelectorAll('.cbc-back').forEach((x) => x.remove());
     let cur = { type: type || 'QRCODE', value: value != null ? String(value) : '' };
@@ -4912,7 +4913,8 @@ ${shape}${bwOpen}`);
     });
     document.addEventListener('keydown', function k(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', k); } });
     window.addEventListener('craft-barcodes', function again() { if (!document.body.contains(back)) return window.removeEventListener('craft-barcodes', again); libDraw(); });
-    fill(); libDraw(); draw(); setTimeout(() => f('value').focus(), 0);
+    fill(); if (content && !entry && value == null && TAKES_CONTENT.includes(f('type').value)) { f('fmt').value = contentOf(content).id; formDraw({}); fromForm(); }
+    libDraw(); draw(); setTimeout(() => { const first = content && f('form').querySelector('[data-cf]'); (first || f('value')).focus(); }, 0);
     return { close };
   }
 
@@ -5027,8 +5029,8 @@ ${shape}${bwOpen}`);
   async function forget(id) { await picTx('readwrite', (s) => s.delete(id)).catch(() => {}); const A = acct(); if (A) await A.remove('pictures', id).catch(() => {}); }
 
   // ------------------------------------------------------------------ the window
-  function open({ app = 'Craft', svg: takesSvg = true, onPick, onSource } = {}) {
-    let source = 'server', server = '', q = '', cat = '', items = [], total = 0, cats = [], chosen = null, localAll = null, timer = 0, minePics = null;
+  function open({ app = 'Craft', svg: takesSvg = true, onPick, onSource, tab } = {}) {
+    let source = tab === 'mine' || tab === 'local' ? tab : 'server', server = '', q = '', cat = '', items = [], total = 0, cats = [], chosen = null, localAll = null, timer = 0, minePics = null;
     const back = document.createElement('div'); back.className = 'craft-clip'; back.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;box-sizing:border-box;z-index:2147483000;display:grid;place-items:center;grid-template-rows:100%;padding:16px;background:rgba(0,0,0,.5)';
     const shut = () => back.remove();
     back.innerHTML = `<div role="dialog" aria-modal="true" aria-label="Clip art" style="width:min(1100px,100%);height:min(760px,calc(100vh - 32px));min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:10px;padding:16px;border-radius:12px;border:1px solid var(--line,#555);background:var(--panel,#222);color:var(--fg,#eee);font:14px system-ui,sans-serif">
@@ -5115,7 +5117,7 @@ ${shape}${bwOpen}`);
     back.addEventListener('change', (e) => { if (e.target.matches('[data-cat]')) { cat = e.target.value; load(); } });
     back.addEventListener('keydown', (e) => { if (e.key === 'Escape') shut(); if (e.key === 'Enter' && chosen && !e.target.matches('[data-q]')) insert(); });
     (document.body || document.documentElement).append(back); $('[data-q]').focus();
-    (async () => { $('[data-count]').textContent = 'Looking for the clip-art server…'; server = await findServer(); if (server) cats = await serverCats(server); else source = 'local'; await drawTabs(); await load(); })().catch((e) => { console.error(e); $('[data-count]').textContent = 'The clip art could not be read: ' + (e.message || e); });
+    (async () => { $('[data-count]').textContent = 'Looking for the clip-art server…'; server = await findServer(); if (server) cats = await serverCats(server); else if (source === 'server') source = 'local'; await drawTabs(); await load(); })().catch((e) => { console.error(e); $('[data-count]').textContent = 'The clip art could not be read: ' + (e.message || e); });
   }
   // an SVG drawn as a PNG (for an app that takes pictures only)
   async function svgToPng(svg) { const u = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })); try { const img = new Image(); img.src = u; await img.decode(); const w = img.naturalWidth || 512, h = img.naturalHeight || 512, k = Math.max(1, 1024 / Math.max(w, h)), c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return await new Promise((ok) => c.toBlob(ok, 'image/png')); } finally { URL.revokeObjectURL(u); } }
