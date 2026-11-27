@@ -135,3 +135,8 @@ The wand in the title bar's quick buttons and the Start button, first on the Hom
 - 2026-11-19 craft-keys.js brought up to the shared version (the same in every Craft app; copying works on plain http).
 
 - 2026-11-19 One account: the Craft login in the title bar (js/craft-account.js, craft-crypto.js), the apps bar (js/craft-rail.js; LabelCraft is with the apps of one account now), My files (js/craft-files.js, FileCraft's file manager). File menu and ribbon: Save to My files (My files › LabelCraft; Ctrl+S saves back there when the label came from there), Open from My files… (CraftFiles.pick), My files…, Keep in My pictures… (SVG, a picture at 300 DPI, or the label's working file; Clip art › My pictures › Open it here opens a working file again).
+
+## 2026-11-27: the Craft Hub
+- launcher.json: this app's card in the Craft Hub (the launcher at /craft/: an expanding pie of every app, read from each folder's launcher.json); launcher.png: its picture there
+- The Craft rail (the bar down the left) has the Craft Hub at the top, back to /craft/ from any page
+- See every app: https://github.com/xoxide101
