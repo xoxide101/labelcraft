@@ -1,0 +1,9 @@
+{
+ "name": "LabelCraft",
+ "icon": "🏷",
+ "about": "Labels",
+ "group": "Make and design",
+ "order": 10,
+ "entry": "index.html",
+ "status": "beta"
+}
